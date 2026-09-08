@@ -21,10 +21,12 @@ model Profile {
   bio         String?
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  albumRatings AlbumRating[]
-  trackRatings TrackRating[]
-  listens      Listen[]
-  watchlist    Watchlist[]
+  albumRatings      AlbumRating[]
+  trackRatings      TrackRating[]
+  listens           Listen[]
+  watchlist         Watchlist[]
+  playlists         Playlist[]
+  spotifyConnection SpotifyConnection?
 
   @@map("profiles")
 }
@@ -41,13 +43,19 @@ model Artist {
 }
 
 model Album {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  artistId    String    @map("artist_id") @db.Uuid
-  title       String
-  coverUrl    String?   @map("cover_url")
-  releaseDate DateTime? @map("release_date") @db.Date
-  description String?
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  artistId     String    @map("artist_id") @db.Uuid
+  title        String
+  coverUrl     String?   @map("cover_url")
+  releaseDate  DateTime? @map("release_date") @db.Date
+  description  String?
+  genre        String?
+  // Denormalized, kept in sync by the update_album_rating_stats trigger
+  // (see prisma/rls-and-seed.sql) — lets every catalog sort, including
+  // "popularity", paginate with a plain indexed ORDER BY.
+  ratingsCount Int       @default(0) @map("ratings_count")
+  avgRating    Decimal?  @map("avg_rating") @db.Decimal(3, 2)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   artist       Artist        @relation(fields: [artistId], references: [id], onDelete: Cascade)
   tracks       Track[]
@@ -57,6 +65,8 @@ model Album {
 
   @@index([artistId])
   @@index([createdAt(sort: Desc)])
+  @@index([genre])
+  @@index([ratingsCount(sort: Desc)])
   @@map("albums")
 }
 
@@ -140,4 +150,43 @@ model Watchlist {
   @@unique([userId, albumId])
   @@index([userId])
   @@map("watchlist")
+}
+
+/// A link to a playlist a user has built on an external streaming platform
+/// (spotify/deezer/itunes). Either pasted by hand (externalId stays at its
+/// random default) or imported from a connected Spotify account (externalId
+/// = the real playlist id, so re-importing upserts instead of duplicating).
+/// The `platform in (...)` check constraint lives in rls-and-seed.sql since
+/// Prisma can't declare check constraints in this version.
+model Playlist {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  platform   String
+  url        String
+  title      String?
+  externalId String   @default(dbgenerated("gen_random_uuid()::text")) @map("external_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform, externalId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("playlists")
+}
+
+/// Tokens for a user's connected Spotify account, used to import their
+/// playlists into Playlist rows. Never publicly readable — see the
+/// owner-only RLS policy in rls-and-seed.sql.
+model SpotifyConnection {
+  userId        String   @id @map("user_id") @db.Uuid
+  spotifyUserId String   @map("spotify_user_id")
+  accessToken   String   @map("access_token")
+  refreshToken  String   @map("refresh_token")
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("spotify_connections")
 }

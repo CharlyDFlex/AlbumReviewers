@@ -12,9 +12,9 @@ export function formatAlbumDuration(totalSeconds: number): string {
   return `${minutes} min`;
 }
 
-export function formatDate(iso: string | null): string {
+export function formatDate(iso: string | null, intlLocale: string): string {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("fr-FR", {
+  return new Date(iso).toLocaleDateString(intlLocale, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -24,6 +24,11 @@ export function formatDate(iso: string | null): string {
 export function formatYear(iso: string | null): string {
   if (!iso) return "";
   return new Date(iso).getFullYear().toString();
+}
+
+export function formatMonthYear(date: Date, intlLocale: string): string {
+  const label = date.toLocaleDateString(intlLocale, { month: "long", year: "numeric" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 export function average(values: number[]): number | null {

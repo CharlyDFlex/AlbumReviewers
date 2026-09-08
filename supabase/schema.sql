@@ -35,6 +35,15 @@ create table if not exists public.albums (
   cover_url text,
   release_date date,
   description text,
+  genre text,
+  -- Denormalized rating aggregates, kept in sync by the
+  -- update_album_rating_stats trigger below. Plain columns (rather than a
+  -- view) so every catalog sort — including "popularity" — can use a
+  -- single indexed ORDER BY and paginate with .range() like any other
+  -- column; a view can't be embedded/ordered-by through PostgREST without
+  -- a real foreign key, which views can't have.
+  ratings_count integer not null default 0,
+  avg_rating numeric(3, 2),
   created_at timestamptz not null default now()
 );
 
@@ -88,8 +97,39 @@ create table if not exists public.watchlist (
   unique (user_id, album_id)
 );
 
+-- Links to playlists a user has built on an external streaming platform.
+-- Rows can come from two places: pasted by hand (platform in ('spotify',
+-- 'deezer', 'itunes'), external_id left at its random default so it never
+-- collides with anything), or imported from a connected Spotify account
+-- (external_id = the real Spotify playlist id, so re-importing upserts
+-- instead of duplicating).
+create table if not exists public.playlists (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  platform text not null check (platform in ('spotify', 'deezer', 'itunes')),
+  url text not null,
+  title text,
+  external_id text not null default gen_random_uuid()::text,
+  created_at timestamptz not null default now(),
+  unique (user_id, platform, external_id)
+);
+
+-- One row per user: the tokens from their connected Spotify account. Not
+-- publicly readable (see RLS below) — only the owner (or the service role)
+-- can see their own access/refresh tokens.
+create table if not exists public.spotify_connections (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  spotify_user_id text not null,
+  access_token text not null,
+  refresh_token text not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists albums_artist_id_idx on public.albums (artist_id);
 create index if not exists albums_created_at_idx on public.albums (created_at desc);
+create index if not exists albums_genre_idx on public.albums (genre);
 create index if not exists tracks_album_id_idx on public.tracks (album_id);
 create index if not exists album_ratings_album_id_idx on public.album_ratings (album_id);
 create index if not exists album_ratings_user_id_idx on public.album_ratings (user_id);
@@ -97,6 +137,7 @@ create index if not exists track_ratings_track_id_idx on public.track_ratings (t
 create index if not exists listens_user_id_idx on public.listens (user_id, listened_at desc);
 create index if not exists listens_album_id_idx on public.listens (album_id);
 create index if not exists watchlist_user_id_idx on public.watchlist (user_id);
+create index if not exists playlists_user_id_idx on public.playlists (user_id, created_at desc);
 
 -- =========================================================
 -- updated_at trigger helper
@@ -120,6 +161,11 @@ create trigger set_updated_at
 drop trigger if exists set_updated_at on public.track_ratings;
 create trigger set_updated_at
   before update on public.track_ratings
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists set_updated_at on public.spotify_connections;
+create trigger set_updated_at
+  before update on public.spotify_connections
   for each row execute function public.set_updated_at();
 
 -- =========================================================
@@ -152,6 +198,79 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- =========================================================
+-- Keep albums.ratings_count / albums.avg_rating in sync
+-- =========================================================
+
+-- Powers the "popularity" sort on /albums (we have no streaming data —
+-- community ratings are the honest signal available).
+create or replace function public.update_album_rating_stats()
+returns trigger
+language plpgsql
+as $$
+declare
+  target_album_id uuid;
+begin
+  target_album_id := coalesce(new.album_id, old.album_id);
+  update public.albums
+  set ratings_count = (select count(*) from public.album_ratings where album_id = target_album_id and rating is not null),
+      avg_rating = (select round(avg(rating)::numeric, 2) from public.album_ratings where album_id = target_album_id and rating is not null)
+  where id = target_album_id;
+  return null;
+end;
+$$;
+
+drop trigger if exists update_album_rating_stats on public.album_ratings;
+create trigger update_album_rating_stats
+  after insert or update or delete on public.album_ratings
+  for each row execute function public.update_album_rating_stats();
+
+create index if not exists albums_ratings_count_idx on public.albums (ratings_count desc);
+
+-- =========================================================
+-- Catalog lookup functions
+-- =========================================================
+
+-- Small, catalog-size-independent lookups for the /albums filters — a plain
+-- query would need every row back just to dedupe client-side, which hits
+-- PostgREST's row cap as the catalog grows past it.
+create or replace function public.distinct_album_genres()
+returns table (genre text)
+language sql
+stable
+as $$
+  select distinct genre from public.albums where genre is not null order by genre;
+$$;
+
+create or replace function public.distinct_album_years()
+returns table (year int)
+language sql
+stable
+as $$
+  select distinct extract(year from release_date)::int as year
+  from public.albums
+  where release_date is not null
+  order by year desc;
+$$;
+
+-- Homepage "discover" row: random albums the given user hasn't logged a
+-- listen for yet. ORDER BY random() is fine at this catalog size and keeps
+-- the pick honestly random instead of "whatever sorts first".
+create or replace function public.random_unlistened_albums(target_user_id uuid, result_limit int default 10)
+returns setof public.albums
+language sql
+stable
+as $$
+  select a.*
+  from public.albums a
+  where not exists (
+    select 1 from public.listens l
+    where l.album_id = a.id and l.user_id = target_user_id
+  )
+  order by random()
+  limit result_limit;
+$$;
+
+-- =========================================================
 -- ROW LEVEL SECURITY
 -- =========================================================
 
@@ -163,6 +282,8 @@ alter table public.album_ratings enable row level security;
 alter table public.track_ratings enable row level security;
 alter table public.listens enable row level security;
 alter table public.watchlist enable row level security;
+alter table public.playlists enable row level security;
+alter table public.spotify_connections enable row level security;
 
 -- Profiles: public read, owner write
 drop policy if exists "profiles are viewable by everyone" on public.profiles;
@@ -225,6 +346,21 @@ create policy "watchlists are viewable by everyone" on public.watchlist
 
 drop policy if exists "users manage their own watchlist" on public.watchlist;
 create policy "users manage their own watchlist" on public.watchlist
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Playlist links: public read, owner write
+drop policy if exists "playlists are viewable by everyone" on public.playlists;
+create policy "playlists are viewable by everyone" on public.playlists
+  for select using (true);
+
+drop policy if exists "users manage their own playlists" on public.playlists;
+create policy "users manage their own playlists" on public.playlists
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Spotify tokens: owner-only, no public read policy at all (RLS default-denies
+-- everyone else, including other authenticated users).
+drop policy if exists "users manage their own spotify connection" on public.spotify_connections;
+create policy "users manage their own spotify connection" on public.spotify_connections
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- =========================================================

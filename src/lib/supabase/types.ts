@@ -58,6 +58,11 @@ export type Database = {
           cover_url: string | null;
           release_date: string | null;
           description: string | null;
+          genre: string | null;
+          // Denormalized by the update_album_rating_stats trigger — never
+          // set these from application code.
+          ratings_count: number;
+          avg_rating: number | null;
           created_at: string;
         };
         Insert: {
@@ -67,6 +72,7 @@ export type Database = {
           cover_url?: string | null;
           release_date?: string | null;
           description?: string | null;
+          genre?: string | null;
           created_at?: string;
         };
         Update: {
@@ -75,6 +81,7 @@ export type Database = {
           cover_url?: string | null;
           release_date?: string | null;
           description?: string | null;
+          genre?: string | null;
         };
         Relationships: [
           {
@@ -228,6 +235,71 @@ export type Database = {
           },
         ];
       };
+      playlists: {
+        Row: {
+          id: string;
+          user_id: string;
+          platform: "spotify" | "deezer" | "itunes";
+          url: string;
+          title: string | null;
+          external_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          platform: "spotify" | "deezer" | "itunes";
+          url: string;
+          title?: string | null;
+          external_id?: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [
+          {
+            foreignKeyName: "playlists_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      spotify_connections: {
+        Row: {
+          user_id: string;
+          spotify_user_id: string;
+          access_token: string;
+          refresh_token: string;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          spotify_user_id: string;
+          access_token: string;
+          refresh_token: string;
+          expires_at: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          spotify_user_id?: string;
+          access_token?: string;
+          refresh_token?: string;
+          expires_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "spotify_connections_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       watchlist: {
         Row: {
           id: string;
@@ -261,7 +333,20 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      distinct_album_genres: {
+        Args: Record<string, never>;
+        Returns: { genre: string }[];
+      };
+      distinct_album_years: {
+        Args: Record<string, never>;
+        Returns: { year: number }[];
+      };
+      random_unlistened_albums: {
+        Args: { target_user_id: string; result_limit?: number };
+        Returns: Database["public"]["Tables"]["albums"]["Row"][];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
@@ -275,5 +360,6 @@ export type AlbumRating = Database["public"]["Tables"]["album_ratings"]["Row"];
 export type TrackRating = Database["public"]["Tables"]["track_ratings"]["Row"];
 export type Listen = Database["public"]["Tables"]["listens"]["Row"];
 export type WatchlistEntry = Database["public"]["Tables"]["watchlist"]["Row"];
+export type Playlist = Database["public"]["Tables"]["playlists"]["Row"];
 
 export type AlbumWithArtist = Album & { artist: Artist };

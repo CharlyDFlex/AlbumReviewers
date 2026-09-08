@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 const STAR = "★";
 
 /** Read-only star rating display, supports half-star increments (0.5 - 5). */
@@ -10,8 +12,10 @@ export function StarDisplay({
   size?: string;
   showValue?: boolean;
 }) {
+  const t = useTranslations("StarDisplay");
+
   if (rating == null) {
-    return <span className={`${size} text-muted`}>Pas encore noté</span>;
+    return <span className={`${size} text-muted`}>{t("notRatedYet")}</span>;
   }
 
   return (
@@ -25,7 +29,7 @@ export function StarDisplay({
           {STAR.repeat(5)}
         </span>
       </span>
-      <span className="sr-only">{rating} sur 5</span>
+      <span className="sr-only">{t("outOf5", { rating })}</span>
       {showValue && <span className="text-muted text-sm">{rating.toFixed(1)}</span>}
     </span>
   );

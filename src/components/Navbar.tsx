@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { SearchBox } from "@/components/SearchBox";
 
 export async function Navbar() {
+  const t = await getTranslations("Nav");
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,15 +30,15 @@ export async function Navbar() {
 
         <nav className="hidden sm:flex items-center gap-4 text-sm text-muted">
           <Link href="/albums" className="hover:text-foreground transition">
-            Albums
+            {t("albums")}
           </Link>
           {user && (
             <>
               <Link href="/diary" className="hover:text-foreground transition">
-                Journal
+                {t("diary")}
               </Link>
               <Link href="/watchlist" className="hover:text-foreground transition">
-                À écouter
+                {t("watchlist")}
               </Link>
             </>
           )}
@@ -57,7 +59,7 @@ export async function Navbar() {
                   type="submit"
                   className="text-sm text-muted hover:text-danger transition cursor-pointer"
                 >
-                  Déconnexion
+                  {t("logout")}
                 </button>
               </form>
             </>
@@ -67,13 +69,13 @@ export async function Navbar() {
                 href="/login"
                 className="text-sm text-muted hover:text-foreground transition"
               >
-                Connexion
+                {t("login")}
               </Link>
               <Link
                 href="/signup"
                 className="rounded-full bg-accent px-3 py-1.5 text-sm font-medium text-black hover:bg-accent-hover transition"
               >
-                S&apos;inscrire
+                {t("signup")}
               </Link>
             </>
           )}

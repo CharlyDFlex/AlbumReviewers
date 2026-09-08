@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { AlbumCard } from "@/components/AlbumCard";
 
 export default async function WatchlistPage() {
+  const t = await getTranslations("Watchlist");
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,18 +20,20 @@ export default async function WatchlistPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Albums à écouter</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("title")}</h1>
       <div className="flex flex-wrap gap-4">
         {entries?.map((entry) => (
           <AlbumCard key={entry.id} album={entry.album} />
         ))}
         {entries?.length === 0 && (
           <p className="text-muted text-sm">
-            Ta liste est vide.{" "}
-            <Link href="/albums" className="text-accent hover:underline">
-              Ajoute des albums
-            </Link>{" "}
-            que tu veux écouter.
+            {t.rich("empty", {
+              link: (chunks) => (
+                <Link href="/albums" className="text-accent hover:underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         )}
       </div>

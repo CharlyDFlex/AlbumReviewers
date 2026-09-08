@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 
 function slugifyUsername(raw: string): string {
@@ -30,11 +31,8 @@ export async function signUp(formData: FormData) {
   }
 
   if (!data.session) {
-    redirect(
-      `/login?message=${encodeURIComponent(
-        "Compte créé ! Vérifie tes e-mails pour confirmer ton adresse avant de te connecter.",
-      )}`,
-    );
+    const t = await getTranslations("Auth");
+    redirect(`/login?message=${encodeURIComponent(t("accountCreatedCheckEmail"))}`);
   }
 
   revalidatePath("/", "layout");

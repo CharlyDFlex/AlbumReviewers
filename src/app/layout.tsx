@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Navbar } from "@/components/Navbar";
 import "./globals.css";
 
@@ -13,26 +15,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Vinylbox — suis tes albums",
-  description:
-    "Note, review et suis les albums que tu écoutes — dans le style de Letterboxd, pour la musique.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
+  const t = await getTranslations("Footer");
+
   return (
     <html
-      lang="fr"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-6">
-          {children}
-        </main>
-        <footer className="border-t border-border py-6 text-center text-xs text-muted">
-          Vinylbox — projet de test, propulsé par Supabase.
-        </footer>
+        <NextIntlClientProvider>
+          <Navbar />
+          <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-6">
+            {children}
+          </main>
+          <footer className="border-t border-border py-6 text-center text-xs text-muted">
+            {t("tagline")}
+          </footer>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -13,6 +13,7 @@
 import { Client } from "pg";
 import { readFileSync, existsSync } from "node:fs";
 import { ARTISTS } from "./artists-list.mjs";
+import { normalizeGenre } from "./genre.mjs";
 
 const ALBUMS_PER_ARTIST = 10;
 const REQUEST_DELAY_MS = 700;
@@ -142,9 +143,9 @@ async function importArtist(client, artistName, stats) {
     } else {
       const releaseDate = r.releaseDate ? r.releaseDate.slice(0, 10) : null;
       const inserted = await client.query(
-        `insert into public.albums (artist_id, title, cover_url, release_date)
-         values ($1, $2, $3, $4) returning id`,
-        [artistId, title, upgradeArtwork(r.artworkUrl100), releaseDate],
+        `insert into public.albums (artist_id, title, cover_url, release_date, genre)
+         values ($1, $2, $3, $4, $5) returning id`,
+        [artistId, title, upgradeArtwork(r.artworkUrl100), releaseDate, normalizeGenre(r.primaryGenreName)],
       );
       albumId = inserted.rows[0].id;
       stats.albumsInserted++;

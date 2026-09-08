@@ -1,14 +1,22 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { StarDisplay } from "@/components/StarDisplay";
 import { TrackRow } from "@/components/TrackRow";
 import { AlbumRatingForm } from "@/components/AlbumRatingForm";
+import { StreamingLinks } from "@/components/StreamingLinks";
 import { SubmitButton } from "@/components/SubmitButton";
 import { formatDate, formatYear, average } from "@/lib/format";
+import { shouldSkipImageOptimization } from "@/lib/cover";
+import { INTL_TAGS } from "@/i18n/locales";
 import { logListen, deleteListen, toggleWatchlist } from "@/app/albums/[id]/actions";
 
 export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
+  const t = await getTranslations("Album");
+  const locale = await getLocale();
+  const intlLocale = INTL_TAGS[locale];
   const { id } = await props.params;
   const supabase = await createClient();
 
@@ -16,44 +24,47 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: album }, { data: tracks }, { data: ratings }] = await Promise.all([
-    supabase.from("albums").select("*, artist:artists(*)").eq("id", id).single(),
-    supabase.from("tracks").select("*").eq("album_id", id).order("track_number"),
-    supabase
-      .from("album_ratings")
-      .select("*, profile:profiles(username, display_name)")
-      .eq("album_id", id)
-      .order("updated_at", { ascending: false }),
-  ]);
+  // listens/watchlist only depend on `user` and `id` (both already known),
+  // not on album/tracks/ratings — running all five in one Promise.all
+  // instead of a second round-trip after saves a full network round-trip
+  // on every load for a logged-in user.
+  const [{ data: album }, { data: tracks }, { data: ratings }, listensResult, watchResult] =
+    await Promise.all([
+      supabase.from("albums").select("*, artist:artists(*)").eq("id", id).single(),
+      supabase.from("tracks").select("*").eq("album_id", id).order("track_number"),
+      supabase
+        .from("album_ratings")
+        .select("*, profile:profiles(username, display_name)")
+        .eq("album_id", id)
+        .order("updated_at", { ascending: false }),
+      user
+        ? supabase
+            .from("listens")
+            .select("id, listened_at")
+            .eq("album_id", id)
+            .eq("user_id", user.id)
+            .order("listened_at", { ascending: false })
+        : Promise.resolve({ data: null }),
+      user
+        ? supabase
+            .from("watchlist")
+            .select("id")
+            .eq("album_id", id)
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
   if (!album) notFound();
+
+  const myListens = listensResult.data ?? [];
+  const myWatchlistEntry = watchResult.data ?? null;
 
   const trackIds = (tracks ?? []).map((t) => t.id);
   const { data: trackRatings } =
     trackIds.length > 0
       ? await supabase.from("track_ratings").select("*").in("track_id", trackIds)
       : { data: [] as { track_id: string; rating: number; user_id: string }[] };
-
-  let myListens: { id: string; listened_at: string }[] = [];
-  let myWatchlistEntry: { id: string } | null = null;
-  if (user) {
-    const [{ data: listens }, { data: watch }] = await Promise.all([
-      supabase
-        .from("listens")
-        .select("id, listened_at")
-        .eq("album_id", id)
-        .eq("user_id", user.id)
-        .order("listened_at", { ascending: false }),
-      supabase
-        .from("watchlist")
-        .select("id")
-        .eq("album_id", id)
-        .eq("user_id", user.id)
-        .maybeSingle(),
-    ]);
-    myListens = listens ?? [];
-    myWatchlistEntry = watch ?? null;
-  }
 
   const ratedValues = (ratings ?? [])
     .map((r) => r.rating)
@@ -80,13 +91,16 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row gap-6">
         <div className="w-48 shrink-0 mx-auto sm:mx-0">
-          <div className="aspect-square w-full overflow-hidden rounded-lg bg-surface border border-border flex items-center justify-center">
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-surface border border-border flex items-center justify-center">
             {album.cover_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={album.cover_url}
                 alt={album.title}
-                className="h-full w-full object-cover"
+                fill
+                sizes="192px"
+                priority
+                unoptimized={shouldSkipImageOptimization(album.cover_url)}
+                className="object-cover"
               />
             ) : (
               <span className="text-muted text-sm text-center px-3">
@@ -111,7 +125,7 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
           <div className="mt-3 flex items-center gap-3">
             <StarDisplay rating={avgAlbumRating} size="text-lg" showValue />
             <span className="text-sm text-muted">
-              ({ratedValues.length} note{ratedValues.length > 1 ? "s" : ""})
+              {t("ratingsCount", { count: ratedValues.length })}
             </span>
           </div>
 
@@ -121,6 +135,10 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
             </p>
           )}
 
+          <div className="mt-4">
+            <StreamingLinks artist={album.artist.name} title={album.title} />
+          </div>
+
           {user ? (
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <form action={logListen}>
@@ -129,7 +147,7 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
                   pendingText="..."
                   className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-black hover:bg-accent-hover transition cursor-pointer disabled:opacity-60"
                 >
-                  {myListens.length > 0 ? "Ré-écouté ✓" : "Marquer comme écouté"}
+                  {myListens.length > 0 ? t("listenAgain") : t("markAsListened")}
                 </SubmitButton>
               </form>
               <form action={toggleWatchlist}>
@@ -143,22 +161,27 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
                   pendingText="..."
                   className="rounded-full border border-border px-4 py-1.5 text-sm font-medium hover:bg-surface-hover transition cursor-pointer disabled:opacity-60"
                 >
-                  {myWatchlistEntry ? "Retirer de à écouter" : "Ajouter à écouter"}
+                  {myWatchlistEntry ? t("removeFromWatchlist") : t("addToWatchlist")}
                 </SubmitButton>
               </form>
               {myListens.length > 0 && (
                 <span className="text-xs text-muted">
-                  Écouté {myListens.length} fois · dernière fois le{" "}
-                  {formatDate(myListens[0].listened_at)}
+                  {t("listenedTimes", {
+                    count: myListens.length,
+                    date: formatDate(myListens[0].listened_at, intlLocale),
+                  })}
                 </span>
               )}
             </div>
           ) : (
             <p className="mt-5 text-sm text-muted">
-              <Link href="/login" className="text-accent hover:underline">
-                Connecte-toi
-              </Link>{" "}
-              pour noter, écrire une critique et suivre tes écoutes.
+              {t.rich("loginPrompt", {
+                login: (chunks) => (
+                  <Link href="/login" className="text-accent hover:underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </p>
           )}
         </div>
@@ -166,14 +189,14 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
 
       {user && myListens.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold mb-2">Ton journal pour cet album</h2>
+          <h2 className="text-lg font-semibold mb-2">{t("yourDiaryForAlbum")}</h2>
           <ul className="flex flex-col gap-1">
             {myListens.map((listen) => (
               <li
                 key={listen.id}
                 className="flex items-center justify-between text-sm text-muted"
               >
-                <span>Écouté le {formatDate(listen.listened_at)}</span>
+                <span>{t("listenedOn", { date: formatDate(listen.listened_at, intlLocale) })}</span>
                 <form action={deleteListen}>
                   <input type="hidden" name="listenId" value={listen.id} />
                   <input type="hidden" name="albumId" value={album.id} />
@@ -181,7 +204,7 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
                     pendingText="..."
                     className="text-xs text-muted hover:text-danger cursor-pointer"
                   >
-                    supprimer
+                    {t("delete")}
                   </SubmitButton>
                 </form>
               </li>
@@ -191,7 +214,7 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
       )}
 
       <section>
-        <h2 className="text-lg font-semibold mb-2">Morceaux</h2>
+        <h2 className="text-lg font-semibold mb-2">{t("tracks")}</h2>
         <div className="rounded-lg border border-border bg-surface px-4">
           {(tracks ?? []).map((track) => {
             const entry = trackRatingsByTrack.get(track.id);
@@ -208,16 +231,14 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
             );
           })}
           {(tracks ?? []).length === 0 && (
-            <p className="py-4 text-sm text-muted">
-              Aucun morceau renseigné pour cet album.
-            </p>
+            <p className="py-4 text-sm text-muted">{t("noTracksListed")}</p>
           )}
         </div>
       </section>
 
       {user && (
         <section>
-          <h2 className="text-lg font-semibold mb-2">Ta critique</h2>
+          <h2 className="text-lg font-semibold mb-2">{t("yourReview")}</h2>
           <AlbumRatingForm
             albumId={album.id}
             initialRating={myRating?.rating ?? null}
@@ -228,7 +249,7 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
 
       <section>
         <h2 className="text-lg font-semibold mb-2">
-          Critiques ({otherReviews.length})
+          {t("reviews", { count: otherReviews.length })}
         </h2>
         <div className="flex flex-col gap-4">
           {otherReviews.map((r) => (
@@ -248,11 +269,13 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
               <p className="mt-2 text-sm text-foreground/90 whitespace-pre-wrap">
                 {r.review}
               </p>
-              <p className="mt-2 text-xs text-muted">{formatDate(r.updated_at)}</p>
+              <p className="mt-2 text-xs text-muted">
+                {formatDate(r.updated_at, intlLocale)}
+              </p>
             </article>
           ))}
           {otherReviews.length === 0 && (
-            <p className="text-muted text-sm">Aucune critique pour l&apos;instant.</p>
+            <p className="text-muted text-sm">{t("noReviewsForAlbum")}</p>
           )}
         </div>
       </section>

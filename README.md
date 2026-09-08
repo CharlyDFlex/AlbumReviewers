@@ -1,131 +1,159 @@
-# AlbumReviewers (Vinylbox)
+# Vinylbox
 
-Application web dans l'esprit de [Letterboxd](https://letterboxd.com), mais pour les albums de musique : parcourir les nouveautés, marquer les albums écoutés, garder une liste "à écouter", noter et critiquer les albums, et noter chaque morceau individuellement.
+Vinylbox is basically Letterboxd for music. Log the albums you listen to, rate them (whole album or track by track), write reviews, keep a "to listen" list, and see what other people are into.
 
-Stack : **Next.js 16** (App Router, Server Actions) + **Supabase** (Postgres, Auth, Row Level Security).
+It's a **v1 test build** — I put this together to try out the idea, not a finished product. Some things are still rough around the edges (see [Known limitations](#known-limitations) below).
 
-## Fonctionnalités (v1 / test)
+Built with **Next.js 16** (App Router, Server Actions) and **Supabase** (Postgres + Auth + Row Level Security).
 
-- Authentification par email/mot de passe (Supabase Auth)
-- Fil d'accueil : nouveaux albums + avis récents de la communauté
-- Fiche album : note moyenne, critique par utilisateur, notation morceau par morceau
-- Journal d'écoute ("diary") : chaque écoute est horodatée, un album peut être ré-écouté plusieurs fois
-- Liste "à écouter" (watchlist / backlog)
-- Page profil publique par utilisateur (`/profile/[username]`)
-- Page artiste listant sa discographie
+## What's in it
 
-## 1. Créer le projet Supabase
+- Email/password sign-up and login
+- Homepage with a few rows: albums released this month, the most-listened albums on the site, a few random picks you haven't logged yet, and recent reviews from other users. Each row has a "see all" link to a full page.
+- Album pages: average rating, reviews, and you can rate individual tracks too
+- A listening diary — every time you log an album it's timestamped, and you can log the same album more than once
+- A "want to listen" list
+- Public profile pages, with links to playlists you've made on Spotify/Deezer/Apple Music — either paste the link yourself, or connect your Spotify account and it'll pull your playlists in automatically (see [Connecting Spotify](#connecting-spotify-optional))
+- Artist pages listing their discography
+- Filtering and sorting on the full album catalog: by genre, by year, or by popularity
 
-1. Va sur [supabase.com](https://supabase.com) et crée un nouveau projet (gratuit).
-2. Dans **Project Settings → API**, récupère l'**URL du projet** et la clé **anon public**.
-3. Crée le schéma en base — deux options équivalentes, choisis-en une :
+## Setting it up
 
-   **Option A — SQL Editor (le plus simple)**
+### 1. Create a Supabase project
 
-   Ouvre **SQL Editor**, colle le contenu de [`supabase/schema.sql`](supabase/schema.sql) et exécute-le.
+1. Go to [supabase.com](https://supabase.com) and create a new project — the free tier is plenty for this.
+2. Under **Project Settings → API**, grab your **project URL** and **anon public key**.
+3. Set up the database schema. There are two ways to do this — pick one, they end up in the same place:
 
-   **Option B — Prisma (pratique si tu veux ensuite faire évoluer le schéma avec `prisma db push`)**
+   **Option A — SQL Editor (easiest)**
 
-   Prisma ne sert ici qu'à gérer les *tables* — l'app continue de lire/écrire via le client Supabase-js pour que les policies RLS s'appliquent (voir [Notes techniques](#notes-techniques)).
+   Open the **SQL Editor** in your Supabase project, paste in the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it.
+
+   **Option B — Prisma**
+
+   Only worth it if you plan on evolving the schema later with `prisma db push`. Prisma is only used here to manage tables — the app itself still reads and writes through the Supabase client so that Row Level Security actually applies (more on this under [A note on Prisma](#a-note-on-prisma)).
 
    ```bash
-   cp prisma/.env.example prisma/.env   # puis renseigne DATABASE_URL
-   npm run db:push                       # crée les tables depuis prisma/schema.prisma
-   npm run db:seed                       # RLS, triggers, et données de démo (prisma/rls-and-seed.sql)
+   cp prisma/.env.example prisma/.env   # fill in DATABASE_URL
+   npm run db:push                      # creates the tables from prisma/schema.prisma
+   npm run db:seed                      # RLS policies, triggers, demo data
    ```
 
-   `db push` ne fonctionne que sur une base **vierge** (pas encore de table `profiles`). Une fois le schéma appliqué une première fois (par l'une ou l'autre option), ne relance pas `db push` dessus : `profiles.id` référence `auth.users`, un schéma que Prisma ne gère pas, et `db push` refuserait de continuer sans qu'on lui déclare `auth` comme schéma géré — ce qu'il ne faut **surtout pas** faire, ça l'amènerait à vouloir gérer (et supprimer) les tables internes de Supabase Auth.
+   Heads up: `db push` only works on a **blank** database. Once the schema's been applied once — either way — don't run `db push` again on that same project. `profiles.id` points at `auth.users`, a schema Prisma doesn't know about, and `db push` will refuse to proceed unless you tell it to manage the `auth` schema too. Don't do that — it'll try to manage (and potentially wipe) Supabase's own internal auth tables.
 
-   Les deux options créent exactement le même schéma :
-   - les tables (`profiles`, `artists`, `albums`, `tracks`, `album_ratings`, `track_ratings`, `listens`, `watchlist`)
-   - les policies RLS (lecture publique du catalogue et des notes, écriture réservée au propriétaire)
-   - un trigger qui crée automatiquement un `profile` à l'inscription
-   - quelques artistes/albums/morceaux d'exemple pour ne pas démarrer avec une base vide
+   Both options produce the exact same schema: the tables, the RLS policies (catalog and ratings are publicly readable, writes are locked to the owner), a trigger that creates a profile automatically on sign-up, and a handful of demo artists/albums so the app isn't empty on first run.
 
-4. (Optionnel, pratique en test) Dans **Authentication → Providers → Email**, désactive "Confirm email" pour pouvoir se connecter immédiatement après l'inscription sans vérifier sa boîte mail.
+4. Optional, but handy for testing: under **Authentication → Providers → Email**, turn off "Confirm email" so you can log in right after signing up without checking your inbox.
 
-## 2. Configurer l'app
+### 2. Configure the app
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Remplis `.env.local` avec l'URL et la clé anon récupérées à l'étape précédente.
+Fill in `.env.local` with the URL and anon key from step 1.
 
-## 3. Lancer en local
+### 3. Run it
 
 ```bash
 npm install
 npm run dev
 ```
 
-Ouvre [http://localhost:3000](http://localhost:3000).
+Then open [http://localhost:3000](http://localhost:3000).
 
-## Ajouter des albums au catalogue
+## Connecting Spotify (optional)
 
-Pour cette v1, le catalogue (artistes/albums/morceaux) se gère directement depuis **Supabase → Table Editor** (ou par SQL) : les tables `artists`, `albums` et `tracks` sont en lecture publique mais leur écriture n'est pas ouverte aux utilisateurs de l'app. C'est volontaire pour une v1 de test — une interface d'ajout d'albums pourra être ajoutée ensuite.
+This lets a user link their Spotify account from their profile page so their playlists get imported automatically, instead of pasting each link by hand. Nothing else in the app depends on it — skip this section if you don't care about it.
 
-`cover_url` accepte n'importe quelle URL d'image publique (pas de configuration de domaine nécessaire, l'app affiche les images en `<img>` classique).
+1. Create an app on the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. In the app's settings, add a **Redirect URI**. For local dev, use `http://127.0.0.1:3000/api/spotify/callback` — you'll need the production URL there too once you deploy, and Spotify's fine with having more than one registered.
+3. Grab the **Client ID** and **Client Secret** and drop them into `.env.local`:
+   ```
+   SPOTIFY_CLIENT_ID=...
+   SPOTIFY_CLIENT_SECRET=...
+   ```
+4. While the Spotify app is in **Development Mode** (the default), only accounts you've explicitly added under "User Management" in the dashboard can actually log in through it — up to 5 accounts. You'd need to request Spotify's review to go live for everyone else.
 
-### Import en masse depuis iTunes
+Two things that tripped me up and might trip you up too:
+- Spotify only allows plain `http://` for the loopback address `127.0.0.1` — not for `localhost`, even though they both mean the same thing on your machine. Register `127.0.0.1` and actually browse the app at `http://127.0.0.1:3000`, not `localhost:3000`, or the redirect URI won't match and Spotify will reject it.
+- The access we ask for is read-only (`playlist-read-private` and `playlist-read-collaborative` scopes) — nothing that lets the app touch your Spotify account. The tokens are stored in a `spotify_connections` table that isn't publicly readable — only the account owner (via RLS) can see their own.
 
-[`scripts/import-itunes.mjs`](scripts/import-itunes.mjs) remplit le catalogue à partir de l'API iTunes Search (publique, sans clé) pour une liste d'artistes définie en haut du fichier. Il se connecte directement à Postgres via `DATABASE_URL` (donc en dehors des policies RLS, comme Prisma) pour pouvoir écrire dans `artists`/`albums`/`tracks`.
+## Adding albums to the catalog
+
+Right now the catalog (artists/albums/tracks) is managed directly through **Supabase → Table Editor**, or plain SQL. Those tables are readable by anyone but not writable from the app itself — that's on purpose for a test build; a proper "add an album" UI can come later.
+
+`cover_url` just takes any public image URL, nothing fancier — the app renders it as a plain `<img>`.
+
+### Bulk-importing from iTunes and MusicBrainz
+
+[`scripts/import-itunes.mjs`](scripts/import-itunes.mjs) fills the catalog from Apple's iTunes Search API (public, no key needed) for a list of artists defined in [`scripts/artists-list.mjs`](scripts/artists-list.mjs). It talks to Postgres directly over `DATABASE_URL` (so, like Prisma, it bypasses RLS) to write into `artists`/`albums`/`tracks`.
 
 ```bash
-npm run import:itunes            # tous les artistes de la liste
-IMPORT_LIMIT=3 npm run import:itunes   # seulement les 3 premiers, pour tester
+npm run import:itunes                  # every artist on the list
+IMPORT_LIMIT=3 npm run import:itunes   # just the first 3, useful for a test run
 ```
 
-Idempotent : artistes et albums sont recherchés par nom avant insertion, donc relancer le script ne duplique rien. Édite la liste `ARTISTS` dans le script pour l'adapter à tes goûts.
+It's safe to re-run — artists and albums are looked up by name before inserting, so nothing gets duplicated. Edit the `ARTISTS` list in the script to change what gets imported.
 
-[`scripts/import-year-end-charts.mjs`](scripts/import-year-end-charts.mjs) importe le top 20 des albums les plus vendus/streamés de chaque année 2016-2025, d'après les classements annuels officiels de l'**Official UK Charts Company** (`officialcharts.com`) — la donnée est codée en dur dans [scripts/year-end-charts-data.mjs](scripts/year-end-charts-data.mjs) (pas d'API de charts historiques gratuite disponible). Chaque entrée est recherchée sur iTunes en deux temps (recherche restreinte à l'artiste puis correspondance de titre) pour éviter d'associer le mauvais artiste à un titre générique ; une correspondance jugée peu fiable est **ignorée plutôt qu'insérée à tort** (affiché avec `?` dans les logs).
+[`scripts/import-year-end-charts.mjs`](scripts/import-year-end-charts.mjs) imports the top 20 albums for each year from 2016–2025, based on the official year-end charts from the **Official UK Charts Company** — there's no free API for historical chart data, so it's hardcoded in [`scripts/year-end-charts-data.mjs`](scripts/year-end-charts-data.mjs). Each entry gets looked up on iTunes in two passes (artist-scoped search first, then title matching) to avoid attaching a generic album title to the wrong artist. When it's not confident about a match, it skips the entry rather than guessing (shown with a `?` in the logs).
 
 ```bash
-npm run import:charts             # les 10 années
-YEARS=2023,2024 npm run import:charts   # seulement certaines années, pour tester
+npm run import:charts                   # all 10 years
+YEARS=2023,2024 npm run import:charts   # just a couple, for testing
 ```
 
-[`scripts/import-musicbrainz.mjs`](scripts/import-musicbrainz.mjs) importe les albums studio (+ tracklists) de la même liste d'artistes que `import-itunes.mjs` (partagée via [scripts/artists-list.mjs](scripts/artists-list.mjs)), mais depuis **MusicBrainz** plutôt que l'iTunes Store — un catalogue plus complet et plus ouvert (certains albums bien connus, comme *Brat* de Charli xcx, n'existent tout simplement pas dans l'index de recherche iTunes). Les pochettes viennent de la Cover Art Archive. À exécuter en complément d'`import-itunes.mjs`, pas à sa place — les deux dédupliquent proprement sur la même base.
+[`scripts/import-musicbrainz.mjs`](scripts/import-musicbrainz.mjs) imports studio albums (with full tracklists) for the same artist list, but from **MusicBrainz** instead of the iTunes Store — its catalog is more complete and more open (some well-known albums, like Charli xcx's *Brat*, simply don't turn up in iTunes' search index at all). Cover art comes from the Cover Art Archive. Run it alongside `import-itunes.mjs`, not instead of it — the two dedupe cleanly against each other.
 
 ```bash
-npm run import:musicbrainz                        # tous les artistes de la liste
-IMPORT_LIMIT=3 npm run import:musicbrainz          # les 3 premiers, pour tester
-ONLY="Kanye West,Phoenix" npm run import:musicbrainz  # artistes précis, pour corriger/relancer un cas isolé
+npm run import:musicbrainz                            # every artist on the list
+IMPORT_LIMIT=3 npm run import:musicbrainz              # just the first 3
+ONLY="Kanye West,Phoenix" npm run import:musicbrainz   # specific artists, handy for fixing one bad case
 ```
 
-MusicBrainz étant collaboratif, ses données ne sont pas toujours parfaites : le script filtre déjà les faux positifs évidents (types secondaires Live/Compilation/Remix..., entrées sans date de sortie), mais une recherche d'artiste peut encore, rarement, remonter un groupe hommage ou un homonyme au lieu du bon artiste — repère-le à un nom d'artiste inattendu dans les logs (`+ Nom Inattendu — Titre`) et relance ce cas précis avec `ONLY=`.
+MusicBrainz is crowd-sourced, so the data isn't always spotless. The script already filters out the obvious junk (live albums, compilations, remixes, anything with no release date), but every now and then a search still turns up a tribute band or a same-named artist instead of the real one — you'll see it as an unexpected artist name in the logs (`+ Unexpected Name — Title`); re-run just that one with `ONLY=`.
 
-L'API impose ~1 requête/seconde ; la connexion vers `musicbrainz.org` s'est montrée occasionnellement instable pendant les tests (le script réessaie automatiquement, mais un import complet peut prendre 15-25 minutes).
+The API is rate-limited to roughly one request per second, and the connection to `musicbrainz.org` was occasionally flaky in testing — the script retries automatically, but a full run can still take 15–25 minutes.
 
-## Structure du projet
+## Project layout
 
 ```
 src/
-  app/                    routes (App Router)
-    albums/[id]/           fiche album + server actions (noter, écouter, watchlist)
-    artists/[id]/          page artiste
-    diary/                 journal d'écoute de l'utilisateur connecté
-    watchlist/              liste "à écouter"
-    profile/[username]/     profil public
-    login/ signup/          authentification
-  components/              composants UI partagés (étoiles, cartes album, navbar...)
+  app/
+    albums/[id]/          album page + server actions (rate, log a listen, watchlist)
+    albums/mois/           this month's releases
+    albums/populaires/     top 100 most-listened albums
+    artists/[id]/          artist page
+    diary/                 the logged-in user's listening diary
+    watchlist/              "want to listen" list
+    profile/[username]/     public profile + playlist links
+    api/spotify/            Spotify OAuth connect/callback routes
+    login/ signup/          auth pages
+  components/              shared UI (star ratings, album cards, the horizontal scroll rows, playlist form...)
   lib/
-    supabase/               clients Supabase (browser / server / proxy) + types générés à la main
-    actions/auth.ts         server actions d'authentification
-    format.ts               helpers de formatage
-  proxy.ts                  rafraîchit la session Supabase à chaque requête (proxy.js de Next 16)
+    supabase/               Supabase clients (browser / server / proxy) + hand-written types
+    spotify.ts              Spotify token refresh helper
+    request-origin.ts       works around a Next.js dev quirk, see below
+    actions/auth.ts         auth server actions
+    format.ts                formatting helpers
+  proxy.ts                  refreshes the Supabase session on every request (this is middleware.ts, renamed in Next 16)
 supabase/
-  schema.sql                schéma complet + RLS + données de test (option A, tout-en-un)
+  schema.sql                full schema + RLS + demo data (setup option A)
 prisma/
-  schema.prisma              tables uniquement, en Prisma (option B)
-  rls-and-seed.sql           RLS + triggers + données de test pour l'option B (ce que Prisma ne sait pas déclarer)
+  schema.prisma              tables only, in Prisma (setup option B)
+  rls-and-seed.sql           RLS + triggers + demo data for option B (everything Prisma can't express)
 scripts/
-  import-itunes.mjs          import en masse du catalogue depuis l'API iTunes
+  import-itunes.mjs          bulk import from the iTunes API
+  import-musicbrainz.mjs     bulk import from MusicBrainz
+  import-year-end-charts.mjs bulk import from UK year-end charts
 ```
 
-## Notes techniques
+## A note on Prisma
 
-- Ce projet utilise **Next.js 16**, où `middleware.ts` a été renommé `proxy.ts` — voir [`src/proxy.ts`](src/proxy.ts).
-- Les mutations (noter, ajouter une écoute, gérer la watchlist) passent par des **Server Actions**, protégées côté serveur par la session Supabase et par les policies RLS de Postgres (défense en profondeur).
-- Notes en demi-étoiles de 0,5 à 5, aussi bien pour les albums que pour les morceaux.
-- **Prisma ne gère que le schéma**, pas l'accès aux données à l'exécution : Prisma Client se connecte à Postgres avec un accès direct (utilisateur `postgres`), donc il **contourne RLS**. L'app garde donc `@supabase/supabase-js` (clé `anon`) pour toutes ses requêtes, afin que les policies RLS restent la seule barrière d'autorisation. Si tu modifies `prisma/schema.prisma` plus tard, pense à répercuter le changement dans [`src/lib/supabase/types.ts`](src/lib/supabase/types.ts) (types manuscrits, au même format que `npx supabase gen types typescript`).
+Prisma only manages the *schema* here, not runtime data access. Prisma Client connects to Postgres directly as the `postgres` user, which bypasses Row Level Security entirely — so the app itself always talks to Postgres through `@supabase/supabase-js` with the `anon` key instead, keeping RLS as the actual authorization boundary. If you change `prisma/schema.prisma`, remember to update [`src/lib/supabase/types.ts`](src/lib/supabase/types.ts) by hand too (it's written in the same shape `npx supabase gen types typescript` would produce).
+
+## Known limitations
+
+- **"Popularity" is really just our own users' ratings.** There's no streaming data available from either iTunes or MusicBrainz, so "most popular" on this site means highest rating count + average rating among Vinylbox users — not actual listen counts anywhere else. A brand new catalog with no ratings yet will just sort everything as a tie.
+- **Genre is only filled in for albums imported after that column existed.** It's populated by `import-itunes.mjs` and `import-musicbrainz.mjs`; anything added before that got no genre and just shows up under "all genres".
+- **The catalog list pages paginate manually rather than fetching everything at once** — Supabase's PostgREST layer caps any single response at 1,000 rows, so past that point a naive "fetch it all" query would silently drop data. Worth knowing if you extend those pages.

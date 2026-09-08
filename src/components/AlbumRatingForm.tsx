@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { StarRatingInput } from "@/components/StarRatingInput";
 import { rateAlbum } from "@/app/albums/[id]/actions";
 
@@ -13,6 +14,7 @@ export function AlbumRatingForm({
   initialRating: number | null;
   initialReview: string | null;
 }) {
+  const t = useTranslations("AlbumRatingForm");
   const [rating, setRating] = useState<number | null>(initialRating);
   const [review, setReview] = useState(initialReview ?? "");
   const [isPending, startTransition] = useTransition();
@@ -37,13 +39,13 @@ export function AlbumRatingForm({
       className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">Ta note</span>
+        <span className="text-sm font-medium">{t("yourRating")}</span>
         <StarRatingInput value={rating} onChange={setRating} />
       </div>
       <textarea
         value={review}
         onChange={(e) => setReview(e.target.value)}
-        placeholder="Écris ta critique..."
+        placeholder={t("reviewPlaceholder")}
         rows={4}
         className="resize-none rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-accent"
       />
@@ -53,9 +55,9 @@ export function AlbumRatingForm({
           disabled={isPending}
           className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-black hover:bg-accent-hover transition disabled:opacity-60 cursor-pointer"
         >
-          {isPending ? "Enregistrement..." : "Enregistrer"}
+          {isPending ? t("saving") : t("save")}
         </button>
-        {saved && <span className="text-xs text-accent">Enregistré ✓</span>}
+        {saved && <span className="text-xs text-accent">{t("saved")}</span>}
       </div>
     </form>
   );

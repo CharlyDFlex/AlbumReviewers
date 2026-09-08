@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { StarRatingInput } from "@/components/StarRatingInput";
 import { StarDisplay } from "@/components/StarDisplay";
 import { formatDuration } from "@/lib/format";
@@ -22,6 +23,7 @@ export function TrackRow({
   ratingCount: number;
   canRate: boolean;
 }) {
+  const t = useTranslations("TrackRow");
   const [rating, setRating] = useState<number | null>(initialUserRating);
   const [isPending, startTransition] = useTransition();
 
@@ -58,7 +60,7 @@ export function TrackRow({
         {canRate ? (
           <StarRatingInput value={rating} onChange={handleChange} size="text-sm" />
         ) : (
-          <span className="text-xs text-muted">Connecte-toi pour noter</span>
+          <span className="text-xs text-muted">{t("loginToRate")}</span>
         )}
       </span>
     </div>

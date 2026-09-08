@@ -1,14 +1,16 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { signIn } from "@/lib/actions/auth";
 
 export default async function LoginPage(props: PageProps<"/login">) {
+  const t = await getTranslations("Login");
   const params = await props.searchParams;
   const error = typeof params.error === "string" ? params.error : null;
   const message = typeof params.message === "string" ? params.message : null;
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-bold mb-6">Connexion</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("title")}</h1>
 
       {message && (
         <p className="mb-4 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-accent">
@@ -23,7 +25,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
 
       <form action={signIn} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          Email
+          {t("email")}
           <input
             type="email"
             name="email"
@@ -32,7 +34,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Mot de passe
+          {t("password")}
           <input
             type="password"
             name="password"
@@ -44,14 +46,14 @@ export default async function LoginPage(props: PageProps<"/login">) {
           type="submit"
           className="mt-2 rounded-full bg-accent px-4 py-2 font-medium text-black hover:bg-accent-hover transition cursor-pointer"
         >
-          Se connecter
+          {t("submit")}
         </button>
       </form>
 
       <p className="mt-4 text-sm text-muted">
-        Pas encore de compte ?{" "}
+        {t("noAccountYet")}{" "}
         <Link href="/signup" className="text-accent hover:underline">
-          Inscris-toi
+          {t("signUp")}
         </Link>
       </p>
     </div>

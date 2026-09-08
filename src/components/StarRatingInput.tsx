@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const STAR = "★";
 
@@ -19,6 +20,7 @@ export function StarRatingInput({
   size?: string;
   disabled?: boolean;
 }) {
+  const t = useTranslations("StarRatingInput");
   const [hover, setHover] = useState<number | null>(null);
   const shown = hover ?? value ?? 0;
 
@@ -47,7 +49,7 @@ export function StarRatingInput({
               key={star}
               type="button"
               disabled={disabled}
-              aria-label={`Noter ${star} étoiles`}
+              aria-label={t("rateStars", { count: star })}
               className="flex-1 h-full cursor-pointer disabled:cursor-default"
               onMouseMove={(e) => !disabled && setHover(valueFromEvent(e, star))}
               onClick={(e) => {
@@ -68,7 +70,7 @@ export function StarRatingInput({
           className="text-xs text-muted hover:text-danger cursor-pointer"
           onClick={() => onChange(null)}
         >
-          effacer
+          {t("clear")}
         </button>
       )}
     </span>

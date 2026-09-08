@@ -1,0 +1,159 @@
+{
+  "Metadata": {
+    "title": "Vinylbox — track the albums you listen to",
+    "description": "Rate, review, and keep track of the albums you listen to — Letterboxd, but for music."
+  },
+  "Footer": {
+    "tagline": "Vinylbox — a test project, powered by Supabase."
+  },
+  "Nav": {
+    "albums": "Albums",
+    "diary": "Diary",
+    "watchlist": "To listen",
+    "login": "Log in",
+    "signup": "Sign up",
+    "logout": "Log out"
+  },
+  "SearchBox": {
+    "placeholder": "Search for an album or artist..."
+  },
+  "Home": {
+    "heroTitle": "Track the albums you listen to.",
+    "heroSubtitle": "Rate albums and tracks, write reviews, keep a listening diary, and build your to-listen list — like Letterboxd, but for music.",
+    "createAccount": "Create an account",
+    "browseAlbums": "Browse albums",
+    "releasesThisMonth": "Released in {month}",
+    "seeAll": "See all",
+    "noReleasesThisMonth": "No releases this month yet.",
+    "mostListened": "Most listened",
+    "noRatedAlbumsYet": "No rated albums yet.",
+    "discover": "Discover",
+    "discoverSubtitle": "Albums you haven't listened to yet",
+    "recentReviews": "Recent reviews",
+    "reviewLine": "<user>{userName}</user> rated <album>{albumTitle}</album> · {artist}",
+    "noReviewsYet": "No reviews yet."
+  },
+  "Albums": {
+    "allAlbums": "All albums",
+    "resultsFor": "Results for \"{query}\"",
+    "noAlbumsFound": "No albums found.",
+    "prev": "← Previous",
+    "next": "Next →",
+    "pageOf": "Page {page} of {total}"
+  },
+  "AlbumFilters": {
+    "allGenres": "All genres",
+    "allYears": "All years",
+    "sortTitle": "Title (A-Z)",
+    "sortPopular": "Popularity",
+    "sortRecent": "Release date",
+    "sortNewest": "Recently added",
+    "filterByGenre": "Filter by genre",
+    "filterByYear": "Filter by year",
+    "sortBy": "Sort by",
+    "reset": "Reset"
+  },
+  "AlbumsThisMonth": {
+    "title": "Released in {month}",
+    "fullCatalog": "Full catalog",
+    "noReleasesThisMonth": "No albums released this month yet."
+  },
+  "PopularAlbums": {
+    "title": "The most listened-to albums",
+    "subtitle": "Ranked by ratings from the community (every year, every genre).",
+    "fullCatalog": "Full catalog",
+    "ratingsCount": "{count, plural, one {# rating} other {# ratings}}",
+    "noRatedAlbumsYet": "No rated albums yet."
+  },
+  "Album": {
+    "ratingsCount": "({count, plural, one {# rating} other {# ratings}})",
+    "listenAgain": "Listened again ✓",
+    "markAsListened": "Mark as listened",
+    "removeFromWatchlist": "Remove from to-listen",
+    "addToWatchlist": "Add to to-listen",
+    "listenedTimes": "Listened {count, plural, one {# time} other {# times}} · last on {date}",
+    "loginPrompt": "<login>Log in</login> to rate, write a review, and track your listens.",
+    "yourDiaryForAlbum": "Your diary for this album",
+    "listenedOn": "Listened on {date}",
+    "delete": "delete",
+    "tracks": "Tracks",
+    "noTracksListed": "No tracks listed for this album.",
+    "yourReview": "Your review",
+    "reviews": "Reviews ({count})",
+    "noReviewsForAlbum": "No reviews yet."
+  },
+  "Artist": {
+    "noAlbumsForArtist": "No albums for this artist."
+  },
+  "Diary": {
+    "title": "Your listening diary",
+    "empty": "No listens logged yet. <link>Browse albums</link> to get started."
+  },
+  "Watchlist": {
+    "title": "Albums to listen to",
+    "empty": "Your list is empty. <link>Add albums</link> you want to listen to."
+  },
+  "Profile": {
+    "listens": "listens",
+    "ratings": "ratings",
+    "playlists": "Playlists",
+    "noPlaylistsYet": "No playlists added yet.",
+    "delete": "delete",
+    "spotifyConnected": "Spotify account connected ✓",
+    "importSpotifyPlaylists": "Import my Spotify playlists",
+    "importing": "Importing...",
+    "disconnect": "disconnect",
+    "connectSpotify": "Connect my Spotify account",
+    "recentReviews": "Recent reviews",
+    "noReviewsYet": "No reviews yet.",
+    "recentDiary": "Recent diary",
+    "noListensYet": "No listens yet."
+  },
+  "Login": {
+    "title": "Log in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Log in",
+    "noAccountYet": "Don't have an account yet?",
+    "signUp": "Sign up"
+  },
+  "Signup": {
+    "title": "Create an account",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign up",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Log in"
+  },
+  "Auth": {
+    "accountCreatedCheckEmail": "Account created! Check your email to confirm your address before logging in."
+  },
+  "AlbumRatingForm": {
+    "yourRating": "Your rating",
+    "reviewPlaceholder": "Write your review...",
+    "saving": "Saving...",
+    "save": "Save",
+    "saved": "Saved ✓"
+  },
+  "StarDisplay": {
+    "notRatedYet": "Not rated yet",
+    "outOf5": "{rating} out of 5"
+  },
+  "StarRatingInput": {
+    "rateStars": "Rate {count} stars",
+    "clear": "clear"
+  },
+  "TrackRow": {
+    "loginToRate": "Log in to rate"
+  },
+  "ScrollRow": {
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "PlaylistForm": {
+    "titlePlaceholder": "Title (optional)",
+    "adding": "Adding...",
+    "add": "Add"
+  }
+}

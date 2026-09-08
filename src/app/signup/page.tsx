@@ -1,13 +1,15 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { signUp } from "@/lib/actions/auth";
 
 export default async function SignupPage(props: PageProps<"/signup">) {
+  const t = await getTranslations("Signup");
   const params = await props.searchParams;
   const error = typeof params.error === "string" ? params.error : null;
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-bold mb-6">Créer un compte</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("title")}</h1>
 
       {error && (
         <p className="mb-4 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
@@ -17,7 +19,7 @@ export default async function SignupPage(props: PageProps<"/signup">) {
 
       <form action={signUp} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          Nom d&apos;utilisateur
+          {t("username")}
           <input
             type="text"
             name="username"
@@ -27,7 +29,7 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Email
+          {t("email")}
           <input
             type="email"
             name="email"
@@ -36,7 +38,7 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Mot de passe
+          {t("password")}
           <input
             type="password"
             name="password"
@@ -49,14 +51,14 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           type="submit"
           className="mt-2 rounded-full bg-accent px-4 py-2 font-medium text-black hover:bg-accent-hover transition cursor-pointer"
         >
-          S&apos;inscrire
+          {t("submit")}
         </button>
       </form>
 
       <p className="mt-4 text-sm text-muted">
-        Déjà un compte ?{" "}
+        {t("alreadyHaveAccount")}{" "}
         <Link href="/login" className="text-accent hover:underline">
-          Connecte-toi
+          {t("signIn")}
         </Link>
       </p>
     </div>

@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export function SearchBox() {
   const router = useRouter();
+  const t = useTranslations("SearchBox");
 
   return (
     <form
@@ -17,7 +19,7 @@ export function SearchBox() {
       <input
         type="search"
         name="q"
-        placeholder="Rechercher un album ou un artiste..."
+        placeholder={t("placeholder")}
         className="w-56 rounded-full border border-border bg-surface px-3 py-1.5 text-sm placeholder:text-muted focus:outline-none focus:border-accent"
       />
     </form>

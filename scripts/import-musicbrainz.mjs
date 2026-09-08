@@ -25,6 +25,7 @@
 import { Client } from "pg";
 import { readFileSync, existsSync } from "node:fs";
 import { ARTISTS } from "./artists-list.mjs";
+import { normalizeGenre } from "./genre.mjs";
 
 const MB_REQUEST_DELAY_MS = 1100;
 const USER_AGENT = "Vinylbox-Import/1.0 ( test project, no public contact )";
@@ -152,8 +153,14 @@ async function resolveArtistMbid(name) {
 
 // Studio albums only: primary type Album, no secondary type (excludes
 // Live/Compilation/Soundtrack/Remix/Mixtape/DJ-mix/Demo releases).
+function topGenre(releaseGroup) {
+  const genres = releaseGroup.genres ?? [];
+  if (genres.length === 0) return null;
+  return normalizeGenre([...genres].sort((a, b) => b.count - a.count)[0].name);
+}
+
 async function listStudioAlbums(mbid) {
-  const url = `https://musicbrainz.org/ws/2/release-group?artist=${mbid}&type=album&fmt=json&limit=100`;
+  const url = `https://musicbrainz.org/ws/2/release-group?artist=${mbid}&type=album&inc=genres&fmt=json&limit=100`;
   const data = await mbFetch(url);
   return (data["release-groups"] ?? []).filter(
     (rg) =>
@@ -274,9 +281,15 @@ async function importArtist(client, artistName, stats) {
     const cover = await coverArtUrl(rg.id);
     const releaseDate = rg["first-release-date"] || null;
     const insertedAlbum = await client.query(
-      `insert into public.albums (artist_id, title, cover_url, release_date)
-       values ($1, $2, $3, $4) returning id`,
-      [artistId, title, cover, releaseDate && releaseDate.length >= 10 ? releaseDate : null],
+      `insert into public.albums (artist_id, title, cover_url, release_date, genre)
+       values ($1, $2, $3, $4, $5) returning id`,
+      [
+        artistId,
+        title,
+        cover,
+        releaseDate && releaseDate.length >= 10 ? releaseDate : null,
+        topGenre(rg),
+      ],
     );
     const albumId = insertedAlbum.rows[0].id;
     stats.albumsInserted++;

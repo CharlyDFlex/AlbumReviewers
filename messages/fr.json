@@ -1,0 +1,159 @@
+{
+  "Metadata": {
+    "title": "Vinylbox — suis tes albums",
+    "description": "Note, review et suis les albums que tu écoutes — dans le style de Letterboxd, pour la musique."
+  },
+  "Footer": {
+    "tagline": "Vinylbox — projet de test, propulsé par Supabase."
+  },
+  "Nav": {
+    "albums": "Albums",
+    "diary": "Journal",
+    "watchlist": "À écouter",
+    "login": "Connexion",
+    "signup": "S'inscrire",
+    "logout": "Déconnexion"
+  },
+  "SearchBox": {
+    "placeholder": "Rechercher un album ou un artiste..."
+  },
+  "Home": {
+    "heroTitle": "Suis les albums que tu écoutes.",
+    "heroSubtitle": "Note les albums et les morceaux, écris des critiques, garde un journal d'écoute et construis ta liste à écouter — comme Letterboxd, mais pour la musique.",
+    "createAccount": "Créer un compte",
+    "browseAlbums": "Parcourir les albums",
+    "releasesThisMonth": "Sorties de {month}",
+    "seeAll": "Voir tout",
+    "noReleasesThisMonth": "Aucune sortie ce mois-ci pour l'instant.",
+    "mostListened": "Les plus écoutés",
+    "noRatedAlbumsYet": "Aucun album noté pour l'instant.",
+    "discover": "Découvertes",
+    "discoverSubtitle": "Des albums que tu n'as pas encore écoutés",
+    "recentReviews": "Avis récents",
+    "reviewLine": "<user>{userName}</user> a noté <album>{albumTitle}</album> · {artist}",
+    "noReviewsYet": "Aucun avis pour l'instant."
+  },
+  "Albums": {
+    "allAlbums": "Tous les albums",
+    "resultsFor": "Résultats pour \"{query}\"",
+    "noAlbumsFound": "Aucun album trouvé.",
+    "prev": "← Précédent",
+    "next": "Suivant →",
+    "pageOf": "Page {page} / {total}"
+  },
+  "AlbumFilters": {
+    "allGenres": "Tous les genres",
+    "allYears": "Toutes les années",
+    "sortTitle": "Titre (A-Z)",
+    "sortPopular": "Popularité",
+    "sortRecent": "Date de sortie",
+    "sortNewest": "Récemment ajoutés",
+    "filterByGenre": "Filtrer par genre",
+    "filterByYear": "Filtrer par année",
+    "sortBy": "Trier par",
+    "reset": "Réinitialiser"
+  },
+  "AlbumsThisMonth": {
+    "title": "Sorties de {month}",
+    "fullCatalog": "Tout le catalogue",
+    "noReleasesThisMonth": "Aucun album sorti ce mois-ci pour l'instant."
+  },
+  "PopularAlbums": {
+    "title": "Les albums les plus écoutés",
+    "subtitle": "Classement basé sur les notes de la communauté (toutes années et tous styles confondus).",
+    "fullCatalog": "Tout le catalogue",
+    "ratingsCount": "{count, plural, one {# note} other {# notes}}",
+    "noRatedAlbumsYet": "Aucun album noté pour l'instant."
+  },
+  "Album": {
+    "ratingsCount": "({count, plural, one {# note} other {# notes}})",
+    "listenAgain": "Ré-écouté ✓",
+    "markAsListened": "Marquer comme écouté",
+    "removeFromWatchlist": "Retirer de à écouter",
+    "addToWatchlist": "Ajouter à écouter",
+    "listenedTimes": "Écouté {count, plural, one {# fois} other {# fois}} · dernière fois le {date}",
+    "loginPrompt": "<login>Connecte-toi</login> pour noter, écrire une critique et suivre tes écoutes.",
+    "yourDiaryForAlbum": "Ton journal pour cet album",
+    "listenedOn": "Écouté le {date}",
+    "delete": "supprimer",
+    "tracks": "Morceaux",
+    "noTracksListed": "Aucun morceau renseigné pour cet album.",
+    "yourReview": "Ta critique",
+    "reviews": "Critiques ({count})",
+    "noReviewsForAlbum": "Aucune critique pour l'instant."
+  },
+  "Artist": {
+    "noAlbumsForArtist": "Aucun album pour cet artiste."
+  },
+  "Diary": {
+    "title": "Ton journal d'écoute",
+    "empty": "Aucune écoute enregistrée pour l'instant. <link>Parcours les albums</link> pour commencer."
+  },
+  "Watchlist": {
+    "title": "Albums à écouter",
+    "empty": "Ta liste est vide. <link>Ajoute des albums</link> que tu veux écouter."
+  },
+  "Profile": {
+    "listens": "écoutes",
+    "ratings": "notes",
+    "playlists": "Playlists",
+    "noPlaylistsYet": "Aucune playlist ajoutée pour l'instant.",
+    "delete": "supprimer",
+    "spotifyConnected": "Compte Spotify connecté ✓",
+    "importSpotifyPlaylists": "Importer mes playlists Spotify",
+    "importing": "Import...",
+    "disconnect": "déconnecter",
+    "connectSpotify": "Connecter mon compte Spotify",
+    "recentReviews": "Critiques récentes",
+    "noReviewsYet": "Aucune critique pour l'instant.",
+    "recentDiary": "Journal récent",
+    "noListensYet": "Aucune écoute pour l'instant."
+  },
+  "Login": {
+    "title": "Connexion",
+    "email": "Email",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "noAccountYet": "Pas encore de compte ?",
+    "signUp": "Inscris-toi"
+  },
+  "Signup": {
+    "title": "Créer un compte",
+    "username": "Nom d'utilisateur",
+    "email": "Email",
+    "password": "Mot de passe",
+    "submit": "S'inscrire",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "signIn": "Connecte-toi"
+  },
+  "Auth": {
+    "accountCreatedCheckEmail": "Compte créé ! Vérifie tes e-mails pour confirmer ton adresse avant de te connecter."
+  },
+  "AlbumRatingForm": {
+    "yourRating": "Ta note",
+    "reviewPlaceholder": "Écris ta critique...",
+    "saving": "Enregistrement...",
+    "save": "Enregistrer",
+    "saved": "Enregistré ✓"
+  },
+  "StarDisplay": {
+    "notRatedYet": "Pas encore noté",
+    "outOf5": "{rating} sur 5"
+  },
+  "StarRatingInput": {
+    "rateStars": "Noter {count} étoiles",
+    "clear": "effacer"
+  },
+  "TrackRow": {
+    "loginToRate": "Connecte-toi pour noter"
+  },
+  "ScrollRow": {
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "PlaylistForm": {
+    "titlePlaceholder": "Titre (optionnel)",
+    "adding": "Ajout...",
+    "add": "Ajouter"
+  }
+}
