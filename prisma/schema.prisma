@@ -1,0 +1,143 @@
+// Prisma is used in this project only to apply and evolve the database
+// schema (via `prisma db push`). At runtime the Next.js app talks to
+// Postgres through the Supabase client (see src/lib/supabase/), so that
+// Row Level Security policies are enforced — Prisma Client is not used
+// there. See prisma/rls-and-seed.sql for everything a declarative Prisma
+// schema can't express (RLS policies, triggers, seed data).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id          String   @id @db.Uuid
+  username    String   @unique
+  displayName String?  @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  bio         String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  albumRatings AlbumRating[]
+  trackRatings TrackRating[]
+  listens      Listen[]
+  watchlist    Watchlist[]
+
+  @@map("profiles")
+}
+
+model Artist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  imageUrl  String?  @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  albums Album[]
+
+  @@map("artists")
+}
+
+model Album {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  artistId    String    @map("artist_id") @db.Uuid
+  title       String
+  coverUrl    String?   @map("cover_url")
+  releaseDate DateTime? @map("release_date") @db.Date
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  artist       Artist        @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  tracks       Track[]
+  albumRatings AlbumRating[]
+  listens      Listen[]
+  watchlist    Watchlist[]
+
+  @@index([artistId])
+  @@index([createdAt(sort: Desc)])
+  @@map("albums")
+}
+
+model Track {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  albumId         String @map("album_id") @db.Uuid
+  trackNumber     Int    @map("track_number")
+  title           String
+  durationSeconds Int?   @map("duration_seconds")
+
+  album        Album         @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  trackRatings TrackRating[]
+
+  @@unique([albumId, trackNumber])
+  @@index([albumId])
+  @@map("tracks")
+}
+
+/// One rating/review per user per album (edit-in-place, mirrors a Letterboxd film rating).
+model AlbumRating {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  albumId   String   @map("album_id") @db.Uuid
+  rating    Decimal? @db.Decimal(2, 1)
+  review    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  album   Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, albumId])
+  @@index([albumId])
+  @@index([userId])
+  @@map("album_ratings")
+}
+
+/// One rating per user per track.
+model TrackRating {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  trackId   String   @map("track_id") @db.Uuid
+  rating    Decimal  @db.Decimal(2, 1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track   Track   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId])
+  @@index([trackId])
+  @@map("track_ratings")
+}
+
+/// Diary: every time a user logs a listen (can log the same album more than once).
+model Listen {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  albumId    String   @map("album_id") @db.Uuid
+  listenedAt DateTime @default(now()) @map("listened_at") @db.Date
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  album   Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@index([userId, listenedAt(sort: Desc)])
+  @@index([albumId])
+  @@map("listens")
+}
+
+/// Backlog / "want to listen" list.
+model Watchlist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  albumId   String   @map("album_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  album   Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, albumId])
+  @@index([userId])
+  @@map("watchlist")
+}
