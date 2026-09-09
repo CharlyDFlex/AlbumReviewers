@@ -4,12 +4,16 @@
     "description": "Rate, review, and keep track of the albums you listen to — Letterboxd, but for music."
   },
   "Footer": {
-    "tagline": "Vinylbox — a test project, powered by Supabase."
+    "tagline": "Vinylbox — a test project, powered by Supabase.",
+    "legalNotice": "Legal notice",
+    "privacy": "Privacy",
+    "terms": "Terms of use"
   },
   "Nav": {
     "albums": "Albums",
     "diary": "Diary",
     "watchlist": "To listen",
+    "addAlbum": "Add an album",
     "login": "Log in",
     "signup": "Sign up",
     "logout": "Log out"
@@ -107,7 +111,13 @@
     "recentReviews": "Recent reviews",
     "noReviewsYet": "No reviews yet.",
     "recentDiary": "Recent diary",
-    "noListensYet": "No listens yet."
+    "noListensYet": "No listens yet.",
+    "discjockeyBadge": "🎧 Discjockey",
+    "discjockeyRequestPending": "Your request sent on {date} is awaiting review.",
+    "discjockeyEligible": "You meet the requirements to become a discjockey and add albums to the catalog.",
+    "discjockeyMessagePlaceholder": "A note to support your request (optional)",
+    "discjockeyRequestSubmit": "Request the discjockey role",
+    "discjockeyNotEligible": "To request the discjockey role, your account needs to be at least {days} days old with at least {reviews} written reviews (you have {reviewsDone})."
   },
   "Login": {
     "title": "Log in",
@@ -124,7 +134,8 @@
     "password": "Password",
     "submit": "Sign up",
     "alreadyHaveAccount": "Already have an account?",
-    "signIn": "Log in"
+    "signIn": "Log in",
+    "acceptTerms": "By creating an account, you accept the <cgu>terms of use</cgu> and <privacy>privacy policy</privacy>."
   },
   "Auth": {
     "accountCreatedCheckEmail": "Account created! Check your email to confirm your address before logging in."
@@ -155,5 +166,20 @@
     "titlePlaceholder": "Title (optional)",
     "adding": "Adding...",
     "add": "Add"
+  },
+  "AddAlbum": {
+    "title": "Add an album",
+    "artist": "Artist",
+    "albumTitle": "Album title",
+    "coverUrl": "Cover (image URL)",
+    "releaseDate": "Release date",
+    "genre": "Genre",
+    "description": "Description",
+    "tracklist": "Tracklist",
+    "trackTitlePlaceholder": "Track title",
+    "trackDurationHint": "Duration as minutes:seconds, e.g. 3:45",
+    "removeTrack": "remove",
+    "addTrack": "+ Add a track",
+    "submit": "Create album"
   }
 }

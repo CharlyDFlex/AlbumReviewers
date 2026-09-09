@@ -4,12 +4,16 @@
     "description": "Note, review et suis les albums que tu écoutes — dans le style de Letterboxd, pour la musique."
   },
   "Footer": {
-    "tagline": "Vinylbox — projet de test, propulsé par Supabase."
+    "tagline": "Vinylbox — projet de test, propulsé par Supabase.",
+    "legalNotice": "Mentions légales",
+    "privacy": "Confidentialité",
+    "terms": "CGU"
   },
   "Nav": {
     "albums": "Albums",
     "diary": "Journal",
     "watchlist": "À écouter",
+    "addAlbum": "Ajouter un album",
     "login": "Connexion",
     "signup": "S'inscrire",
     "logout": "Déconnexion"
@@ -107,7 +111,13 @@
     "recentReviews": "Critiques récentes",
     "noReviewsYet": "Aucune critique pour l'instant.",
     "recentDiary": "Journal récent",
-    "noListensYet": "Aucune écoute pour l'instant."
+    "noListensYet": "Aucune écoute pour l'instant.",
+    "discjockeyBadge": "🎧 Discjockey",
+    "discjockeyRequestPending": "Ta demande envoyée le {date} est en attente de validation.",
+    "discjockeyEligible": "Tu remplis les conditions pour devenir discjockey et ajouter des albums au catalogue.",
+    "discjockeyMessagePlaceholder": "Un mot pour appuyer ta demande (optionnel)",
+    "discjockeyRequestSubmit": "Demander à devenir discjockey",
+    "discjockeyNotEligible": "Pour demander le rôle discjockey, il faut un compte d'au moins {days} jours et au moins {reviews} critiques écrites (tu en as {reviewsDone})."
   },
   "Login": {
     "title": "Connexion",
@@ -124,7 +134,8 @@
     "password": "Mot de passe",
     "submit": "S'inscrire",
     "alreadyHaveAccount": "Déjà un compte ?",
-    "signIn": "Connecte-toi"
+    "signIn": "Connecte-toi",
+    "acceptTerms": "En créant un compte, tu acceptes les <cgu>CGU</cgu> et la <privacy>politique de confidentialité</privacy>."
   },
   "Auth": {
     "accountCreatedCheckEmail": "Compte créé ! Vérifie tes e-mails pour confirmer ton adresse avant de te connecter."
@@ -155,5 +166,20 @@
     "titlePlaceholder": "Titre (optionnel)",
     "adding": "Ajout...",
     "add": "Ajouter"
+  },
+  "AddAlbum": {
+    "title": "Ajouter un album",
+    "artist": "Artiste",
+    "albumTitle": "Titre de l'album",
+    "coverUrl": "Pochette (URL de l'image)",
+    "releaseDate": "Date de sortie",
+    "genre": "Genre",
+    "description": "Description",
+    "tracklist": "Tracklist",
+    "trackTitlePlaceholder": "Titre du morceau",
+    "trackDurationHint": "Durée au format minutes:secondes, par exemple 3:45",
+    "removeTrack": "retirer",
+    "addTrack": "+ Ajouter un morceau",
+    "submit": "Créer l'album"
   }
 }

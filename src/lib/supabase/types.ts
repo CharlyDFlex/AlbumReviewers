@@ -13,6 +13,7 @@ export type Database = {
           display_name: string | null;
           avatar_url: string | null;
           bio: string | null;
+          role: "user" | "discjockey";
           created_at: string;
         };
         Insert: {
@@ -21,6 +22,7 @@ export type Database = {
           display_name?: string | null;
           avatar_url?: string | null;
           bio?: string | null;
+          role?: "user" | "discjockey";
           created_at?: string;
         };
         Update: {
@@ -28,6 +30,7 @@ export type Database = {
           display_name?: string | null;
           avatar_url?: string | null;
           bio?: string | null;
+          role?: "user" | "discjockey";
         };
         Relationships: [];
       };
@@ -331,6 +334,36 @@ export type Database = {
           },
         ];
       };
+      discjockey_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          status: "pending" | "approved" | "rejected";
+          message: string | null;
+          created_at: string;
+          reviewed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          status?: "pending" | "approved" | "rejected";
+          message?: string | null;
+          created_at?: string;
+          reviewed_at?: string | null;
+        };
+        // Approving/rejecting is left to the dashboard (service role) —
+        // there's no RLS policy letting application code update this row.
+        Update: Record<string, never>;
+        Relationships: [
+          {
+            foreignKeyName: "discjockey_requests_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -361,5 +394,6 @@ export type TrackRating = Database["public"]["Tables"]["track_ratings"]["Row"];
 export type Listen = Database["public"]["Tables"]["listens"]["Row"];
 export type WatchlistEntry = Database["public"]["Tables"]["watchlist"]["Row"];
 export type Playlist = Database["public"]["Tables"]["playlists"]["Row"];
+export type DiscjockeyRequest = Database["public"]["Tables"]["discjockey_requests"]["Row"];
 
 export type AlbumWithArtist = Album & { artist: Artist };

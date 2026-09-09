@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/request-origin";
+import { encryptToken } from "@/lib/token-crypto";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
 
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
+  if (!clientId || !clientSecret || !process.env.TOKEN_ENCRYPTION_KEY) {
     return NextResponse.json(
       { error: "Spotify n'est pas configuré (identifiants manquants)." },
       { status: 500 },
@@ -75,8 +76,8 @@ export async function GET(request: Request) {
     {
       user_id: user.id,
       spotify_user_id: me.id,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
+      access_token: encryptToken(tokens.access_token),
+      refresh_token: encryptToken(tokens.refresh_token),
       expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     },
     { onConflict: "user_id" },

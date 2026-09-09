@@ -5,6 +5,18 @@ export function formatDuration(totalSeconds: number | null): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+// Inverse of formatDuration — accepts "m:ss" (the format it outputs) or a
+// plain number of seconds. Returns null for anything else, including a
+// blank input, so callers can treat "no duration given" the same way.
+export function parseDurationToSeconds(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+  const match = trimmed.match(/^(\d+):([0-5]?\d)$/);
+  if (!match) return null;
+  return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+}
+
 export function formatAlbumDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.round((totalSeconds % 3600) / 60);

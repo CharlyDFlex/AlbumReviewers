@@ -16,6 +16,7 @@ Built with **Next.js 16** (App Router, Server Actions) and **Supabase** (Postgre
 - Public profile pages, with links to playlists you've made on Spotify/Deezer/Apple Music — either paste the link yourself, or connect your Spotify account and it'll pull your playlists in automatically (see [Connecting Spotify](#connecting-spotify-optional))
 - Artist pages listing their discography
 - Filtering and sorting on the full album catalog: by genre, by year, or by popularity
+- A `discjockey` role: trusted users can add albums to the catalog by hand once they qualify (see [The discjockey role](#the-discjockey-role))
 
 ## Setting it up
 
@@ -73,17 +74,29 @@ This lets a user link their Spotify account from their profile page so their pla
    SPOTIFY_CLIENT_ID=...
    SPOTIFY_CLIENT_SECRET=...
    ```
-4. While the Spotify app is in **Development Mode** (the default), only accounts you've explicitly added under "User Management" in the dashboard can actually log in through it — up to 5 accounts. You'd need to request Spotify's review to go live for everyone else.
+4. Generate a token encryption key and add it too — the access/refresh tokens are encrypted before they're written to `spotify_connections`, so this is required whenever Spotify is enabled:
+   ```
+   TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)
+   ```
+5. While the Spotify app is in **Development Mode** (the default), only accounts you've explicitly added under "User Management" in the dashboard can actually log in through it — up to 5 accounts. You'd need to request Spotify's review to go live for everyone else.
 
 Two things that tripped me up and might trip you up too:
 - Spotify only allows plain `http://` for the loopback address `127.0.0.1` — not for `localhost`, even though they both mean the same thing on your machine. Register `127.0.0.1` and actually browse the app at `http://127.0.0.1:3000`, not `localhost:3000`, or the redirect URI won't match and Spotify will reject it.
-- The access we ask for is read-only (`playlist-read-private` and `playlist-read-collaborative` scopes) — nothing that lets the app touch your Spotify account. The tokens are stored in a `spotify_connections` table that isn't publicly readable — only the account owner (via RLS) can see their own.
+- The access we ask for is read-only (`playlist-read-private` and `playlist-read-collaborative` scopes) — nothing that lets the app touch your Spotify account. The tokens are encrypted (AES-256-GCM, see `src/lib/token-crypto.ts`) before being stored in a `spotify_connections` table that isn't publicly readable — only the account owner (via RLS) can see their own row.
 
 ## Adding albums to the catalog
 
-Right now the catalog (artists/albums/tracks) is managed directly through **Supabase → Table Editor**, or plain SQL. Those tables are readable by anyone but not writable from the app itself — that's on purpose for a test build; a proper "add an album" UI can come later.
+The catalog (artists/albums/tracks) can still be managed directly through **Supabase → Table Editor**, or plain SQL. As of the `discjockey` role below, it can also be added to from the app itself, by hand, via `/albums/nouveau`.
 
 `cover_url` just takes any public image URL, nothing fancier — the app renders it as a plain `<img>`.
+
+### The `discjockey` role
+
+Accounts with the `discjockey` role get an "Add an album" link in the nav, leading to a form (`/albums/nouveau`) to add an album by hand: artist, title, cover URL, release date, genre, description, and a tracklist with per-track duration.
+
+Anyone can request the role from their own profile page, but only once their account is **at least 60 days old** and has **at least 5 written reviews** (see `DISCJOCKEY_MIN_ACCOUNT_AGE_DAYS` / `DISCJOCKEY_MIN_REVIEWS` in [`src/lib/discjockey.ts`](src/lib/discjockey.ts) if you want to tune those). Requests land in the `discjockey_requests` table.
+
+There's no admin UI for this — review requests by hand in **Supabase → Table Editor → discjockey_requests**: set a row's `status` to `approved` (or `rejected`) and a trigger takes care of the rest (flips the requester's `profiles.role` to `discjockey` and stamps `reviewed_at`). You can also just set someone's `profiles.role` to `discjockey` directly if you want to skip the request flow entirely.
 
 ### Bulk-importing from iTunes and MusicBrainz
 

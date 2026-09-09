@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -39,7 +40,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             {children}
           </main>
           <footer className="border-t border-border py-6 text-center text-xs text-muted">
-            {t("tagline")}
+            <nav className="mb-2 flex justify-center gap-4">
+              <Link href="/mentions-legales" className="hover:text-foreground transition">
+                {t("legalNotice")}
+              </Link>
+              <Link href="/confidentialite" className="hover:text-foreground transition">
+                {t("privacy")}
+              </Link>
+              <Link href="/cgu" className="hover:text-foreground transition">
+                {t("terms")}
+              </Link>
+            </nav>
+            <p>{t("tagline")}</p>
           </footer>
         </NextIntlClientProvider>
       </body>

@@ -19,14 +19,22 @@ model Profile {
   displayName String?  @map("display_name")
   avatarUrl   String?  @map("avatar_url")
   bio         String?
+  // 'discjockey' accounts can add albums to the catalog by hand (cover,
+  // tracklist, track durations) from /albums/nouveau. Granted by the
+  // handle_discjockey_request_review trigger when a request below is
+  // approved by hand in the Supabase dashboard. The `role in (...)` check
+  // lives in rls-and-seed.sql (Prisma can't declare check constraints in
+  // this version).
+  role        String   @default("user")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  albumRatings      AlbumRating[]
-  trackRatings      TrackRating[]
-  listens           Listen[]
-  watchlist         Watchlist[]
-  playlists         Playlist[]
-  spotifyConnection SpotifyConnection?
+  albumRatings       AlbumRating[]
+  trackRatings       TrackRating[]
+  listens            Listen[]
+  watchlist          Watchlist[]
+  playlists          Playlist[]
+  spotifyConnection  SpotifyConnection?
+  discjockeyRequests DiscjockeyRequest[]
 
   @@map("profiles")
 }
@@ -189,4 +197,23 @@ model SpotifyConnection {
   profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("spotify_connections")
+}
+
+/// A request from a user to be granted the 'discjockey' role. Reviewed by
+/// hand in the Supabase dashboard (flip `status` to 'approved'/'rejected')
+/// — approving one grants the role via a trigger, see rls-and-seed.sql.
+/// The `status in (...)` check and the one-pending-request-per-user index
+/// also live there (not expressible declaratively here).
+model DiscjockeyRequest {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  status     String    @default("pending")
+  message    String?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("discjockey_requests")
 }

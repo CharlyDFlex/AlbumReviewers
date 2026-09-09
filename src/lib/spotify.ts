@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { decryptToken, encryptToken } from "@/lib/token-crypto";
 
 function basicAuthHeader() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -44,19 +45,19 @@ export async function getValidSpotifyAccessToken(userId: string): Promise<string
   if (!connection) return null;
 
   const stillValid = new Date(connection.expires_at).getTime() > Date.now() + 60_000;
-  if (stillValid) return connection.access_token;
+  if (stillValid) return decryptToken(connection.access_token);
 
-  const refreshed = await refreshAccessToken(connection.refresh_token);
+  const refreshed = await refreshAccessToken(decryptToken(connection.refresh_token));
   if (!refreshed) return null;
 
   await supabase
     .from("spotify_connections")
     .update({
-      access_token: refreshed.access_token,
+      access_token: encryptToken(refreshed.access_token),
       expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
       // Spotify doesn't always rotate the refresh token — keep the old one
       // unless a new one comes back.
-      ...(refreshed.refresh_token ? { refresh_token: refreshed.refresh_token } : {}),
+      ...(refreshed.refresh_token ? { refresh_token: encryptToken(refreshed.refresh_token) } : {}),
     })
     .eq("user_id", userId);
 

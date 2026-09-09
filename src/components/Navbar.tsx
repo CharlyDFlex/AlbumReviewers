@@ -12,13 +12,15 @@ export async function Navbar() {
   } = await supabase.auth.getUser();
 
   let username: string | null = null;
+  let isDiscjockey = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("username")
+      .select("username, role")
       .eq("id", user.id)
       .single();
     username = profile?.username ?? null;
+    isDiscjockey = profile?.role === "discjockey";
   }
 
   return (
@@ -41,6 +43,11 @@ export async function Navbar() {
                 {t("watchlist")}
               </Link>
             </>
+          )}
+          {isDiscjockey && (
+            <Link href="/albums/nouveau" className="hover:text-foreground transition">
+              {t("addAlbum")}
+            </Link>
           )}
         </nav>
 

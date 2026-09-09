@@ -10,9 +10,15 @@ import { formatDate } from "@/lib/format";
 import { shouldSkipImageOptimization } from "@/lib/cover";
 import { INTL_TAGS } from "@/i18n/locales";
 import {
+  DISCJOCKEY_MIN_ACCOUNT_AGE_DAYS,
+  DISCJOCKEY_MIN_REVIEWS,
+  getDiscjockeyEligibility,
+} from "@/lib/discjockey";
+import {
   deletePlaylist,
   disconnectSpotify,
   importSpotifyPlaylists,
+  requestDiscjockey,
 } from "@/app/profile/[username]/actions";
 
 // Proper nouns — not translated.
@@ -43,11 +49,14 @@ export default async function ProfilePage(props: PageProps<"/profile/[username]"
 
   const isOwnProfile = user?.id === profile.id;
 
+  const canRequestDiscjockey = isOwnProfile && profile.role !== "discjockey";
+
   const [
     { data: listens, count: listenCount },
     { data: reviews, count: ratingCount },
     { data: playlists },
     connectionResult,
+    discjockeyRequestResult,
   ] = await Promise.all([
     supabase
       .from("listens")
@@ -73,8 +82,22 @@ export default async function ProfilePage(props: PageProps<"/profile/[username]"
           .eq("user_id", profile.id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    canRequestDiscjockey
+      ? supabase
+          .from("discjockey_requests")
+          .select("status, created_at")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
   const spotifyConnected = !!connectionResult.data;
+  const pendingDiscjockeyRequest =
+    discjockeyRequestResult.data?.status === "pending" ? discjockeyRequestResult.data : null;
+  const discjockeyEligibility = canRequestDiscjockey && !pendingDiscjockeyRequest
+    ? await getDiscjockeyEligibility(supabase, profile.id, profile.created_at)
+    : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -83,14 +106,56 @@ export default async function ProfilePage(props: PageProps<"/profile/[username]"
           {(profile.display_name || profile.username)[0]?.toUpperCase()}
         </div>
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
             {profile.display_name || profile.username}
+            {profile.role === "discjockey" && (
+              <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">
+                {t("discjockeyBadge")}
+              </span>
+            )}
           </h1>
           <p className="text-sm text-muted">@{profile.username}</p>
         </div>
       </div>
 
       {profile.bio && <p className="text-sm text-foreground/80">{profile.bio}</p>}
+
+      {canRequestDiscjockey && (
+        <div className="rounded-lg border border-border bg-surface p-4 text-sm">
+          {pendingDiscjockeyRequest ? (
+            <p className="text-muted">
+              {t("discjockeyRequestPending", {
+                date: formatDate(pendingDiscjockeyRequest.created_at, intlLocale),
+              })}
+            </p>
+          ) : discjockeyEligibility?.eligible ? (
+            <form action={requestDiscjockey} className="flex flex-col gap-2">
+              <p className="font-medium">{t("discjockeyEligible")}</p>
+              <textarea
+                name="message"
+                maxLength={500}
+                rows={2}
+                placeholder={t("discjockeyMessagePlaceholder")}
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-accent"
+              />
+              <SubmitButton
+                pendingText="..."
+                className="self-start rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-black hover:bg-accent-hover transition cursor-pointer disabled:opacity-60"
+              >
+                {t("discjockeyRequestSubmit")}
+              </SubmitButton>
+            </form>
+          ) : (
+            <p className="text-muted">
+              {t("discjockeyNotEligible", {
+                days: DISCJOCKEY_MIN_ACCOUNT_AGE_DAYS,
+                reviews: DISCJOCKEY_MIN_REVIEWS,
+                reviewsDone: discjockeyEligibility?.reviewsCount ?? 0,
+              })}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-8 text-sm">
         <div>

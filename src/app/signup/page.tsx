@@ -53,6 +53,20 @@ export default async function SignupPage(props: PageProps<"/signup">) {
         >
           {t("submit")}
         </button>
+        <p className="text-xs text-muted">
+          {t.rich("acceptTerms", {
+            cgu: (chunks) => (
+              <Link href="/cgu" className="text-accent hover:underline">
+                {chunks}
+              </Link>
+            ),
+            privacy: (chunks) => (
+              <Link href="/confidentialite" className="text-accent hover:underline">
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
       </form>
 
       <p className="mt-4 text-sm text-muted">

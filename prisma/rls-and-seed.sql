@@ -52,7 +52,30 @@ begin
       add constraint playlists_platform_check
       check (platform in ('spotify', 'deezer', 'itunes'));
   end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'profiles_role_check'
+  ) then
+    alter table public.profiles
+      add constraint profiles_role_check
+      check (role in ('user', 'discjockey'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'discjockey_requests_status_check'
+  ) then
+    alter table public.discjockey_requests
+      add constraint discjockey_requests_status_check
+      check (status in ('pending', 'approved', 'rejected'));
+  end if;
 end $$;
+
+-- Only one open request per user at a time (they can re-request after a
+-- rejection, just not stack pending ones).
+create unique index if not exists discjockey_requests_one_pending_per_user
+  on public.discjockey_requests (user_id) where status = 'pending';
+create index if not exists discjockey_requests_user_id_idx
+  on public.discjockey_requests (user_id, created_at desc);
 
 -- =========================================================
 -- updated_at trigger helper
@@ -111,6 +134,33 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- =========================================================
+-- Grant the 'discjockey' role when a request is approved
+-- =========================================================
+
+-- Reviewing a request from the Supabase dashboard is a single edit
+-- (flip `status`): this trigger stamps reviewed_at and, on approval,
+-- updates the requester's profiles.role for you.
+create or replace function public.handle_discjockey_request_review()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status <> old.status then
+    new.reviewed_at = now();
+    if new.status = 'approved' then
+      update public.profiles set role = 'discjockey' where id = new.user_id;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists handle_discjockey_request_review on public.discjockey_requests;
+create trigger handle_discjockey_request_review
+  before update on public.discjockey_requests
+  for each row execute function public.handle_discjockey_request_review();
 
 -- =========================================================
 -- Keep albums.ratings_count / albums.avg_rating in sync
@@ -200,6 +250,7 @@ alter table public.listens enable row level security;
 alter table public.watchlist enable row level security;
 alter table public.playlists enable row level security;
 alter table public.spotify_connections enable row level security;
+alter table public.discjockey_requests enable row level security;
 
 -- Profiles: public read, owner write
 drop policy if exists "profiles are viewable by everyone" on public.profiles;
@@ -215,7 +266,8 @@ create policy "users can insert their own profile" on public.profiles
   for insert with check (auth.uid() = id);
 
 -- Catalog data (artists/albums/tracks): public read.
--- Writes are left to the Supabase dashboard / service role while curating the catalog by hand.
+-- Writes are left to the Supabase dashboard / service role while curating
+-- the catalog by hand, plus discjockeys inserting from /albums/nouveau.
 drop policy if exists "artists are viewable by everyone" on public.artists;
 create policy "artists are viewable by everyone" on public.artists
   for select using (true);
@@ -227,6 +279,24 @@ create policy "albums are viewable by everyone" on public.albums
 drop policy if exists "tracks are viewable by everyone" on public.tracks;
 create policy "tracks are viewable by everyone" on public.tracks
   for select using (true);
+
+drop policy if exists "discjockeys can add artists" on public.artists;
+create policy "discjockeys can add artists" on public.artists
+  for insert with check (
+    exists (select 1 from public.profiles where id = auth.uid() and role = 'discjockey')
+  );
+
+drop policy if exists "discjockeys can add albums" on public.albums;
+create policy "discjockeys can add albums" on public.albums
+  for insert with check (
+    exists (select 1 from public.profiles where id = auth.uid() and role = 'discjockey')
+  );
+
+drop policy if exists "discjockeys can add tracks" on public.tracks;
+create policy "discjockeys can add tracks" on public.tracks
+  for insert with check (
+    exists (select 1 from public.profiles where id = auth.uid() and role = 'discjockey')
+  );
 
 -- Album ratings/reviews: public read, owner write
 drop policy if exists "album ratings are viewable by everyone" on public.album_ratings;
@@ -278,6 +348,19 @@ create policy "users manage their own playlists" on public.playlists
 drop policy if exists "users manage their own spotify connection" on public.spotify_connections;
 create policy "users manage their own spotify connection" on public.spotify_connections
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Discjockey requests: visible only to their author (not public — no
+-- reason for other users to see who applied or was rejected). Users can
+-- file their own request in 'pending' state; approving/rejecting is left
+-- to the dashboard (service role bypasses RLS), never to the applicant —
+-- there's deliberately no update/delete policy for regular users here.
+drop policy if exists "users view their own discjockey requests" on public.discjockey_requests;
+create policy "users view their own discjockey requests" on public.discjockey_requests
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "users can request discjockey" on public.discjockey_requests;
+create policy "users can request discjockey" on public.discjockey_requests
+  for insert with check (auth.uid() = user_id and status = 'pending');
 
 -- =========================================================
 -- SEED DATA (sample catalog so the app isn't empty on first run)

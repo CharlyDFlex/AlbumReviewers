@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getValidSpotifyAccessToken } from "@/lib/spotify";
+import { getDiscjockeyEligibility } from "@/lib/discjockey";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -106,5 +107,31 @@ export async function importSpotifyPlaylists() {
 export async function disconnectSpotify() {
   const { supabase, user } = await requireUser();
   await supabase.from("spotify_connections").delete().eq("user_id", user.id);
+  revalidatePath("/profile", "layout");
+}
+
+export async function requestDiscjockey(formData: FormData) {
+  const { supabase, user } = await requireUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, created_at")
+    .eq("id", user.id)
+    .single();
+  if (!profile || profile.role === "discjockey") return;
+
+  const eligibility = await getDiscjockeyEligibility(supabase, user.id, profile.created_at);
+  if (!eligibility.eligible) return;
+
+  const message = String(formData.get("message") ?? "").trim();
+
+  // A unique partial index (one pending request per user) backs this up —
+  // a duplicate insert just fails silently, which is fine here since the
+  // button is already hidden once a pending request exists.
+  await supabase.from("discjockey_requests").insert({
+    user_id: user.id,
+    message: message.length > 0 ? message.slice(0, 500) : null,
+  });
+
   revalidatePath("/profile", "layout");
 }
