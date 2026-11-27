@@ -16,7 +16,8 @@
     "addAlbum": "Ajouter un album",
     "login": "Connexion",
     "signup": "S'inscrire",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "collection": "Ma collection"
   },
   "SearchBox": {
     "placeholder": "Rechercher un album ou un artiste..."
@@ -84,7 +85,9 @@
     "noTracksListed": "Aucun morceau renseigné pour cet album.",
     "yourReview": "Ta critique",
     "reviews": "Critiques ({count})",
-    "noReviewsForAlbum": "Aucune critique pour l'instant."
+    "noReviewsForAlbum": "Aucune critique pour l'instant.",
+    "playRecordLabel": "Sortir le vinyle de « {title} »",
+    "playRecordHint": "Clique sur la pochette pour sortir le vinyle"
   },
   "Artist": {
     "noAlbumsForArtist": "Aucun album pour cet artiste."
@@ -181,5 +184,34 @@
     "removeTrack": "retirer",
     "addTrack": "+ Ajouter un morceau",
     "submit": "Créer l'album"
+  },
+  "Collection": {
+    "title": "Ma collection",
+    "subtitle": "{count, plural, =0 {Aucun vinyle sur l'étagère} one {# vinyle sur l'étagère} other {# vinyles sur l'étagère}}",
+    "openDiary": "Voir le journal d'écoute",
+    "empty": "Ton étagère est vide. Marque un album comme écouté pour l'ajouter à ta collection — <link>parcourir les albums</link>.",
+    "filterPlaceholder": "Chercher dans ma collection...",
+    "sortBy": "Trier par",
+    "sort": {
+      "recent": "Récemment écoutés",
+      "title": "Titre",
+      "artist": "Artiste",
+      "plays": "Les plus écoutés"
+    },
+    "noMatch": "Aucun vinyle ne correspond à ta recherche.",
+    "play": "Écouter {title} — {artist}",
+    "playShort": "Écouter"
+  },
+  "Player": {
+    "dialogLabel": "{title} — {artist} sur la platine",
+    "putBack": "Ranger le vinyle",
+    "nowSpinning": "Sur la platine",
+    "linerNotes": "Notes de pochette",
+    "listenOn": "Écouter sur",
+    "sideA": "Face A",
+    "sideB": "Face B",
+    "loadingTracks": "Chargement de la tracklist...",
+    "noTracks": "Pas de tracklist pour cet album.",
+    "viewAlbum": "Voir la fiche de l'album"
   }
 }

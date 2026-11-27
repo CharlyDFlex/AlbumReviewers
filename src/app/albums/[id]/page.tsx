@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -9,7 +8,8 @@ import { AlbumRatingForm } from "@/components/AlbumRatingForm";
 import { StreamingLinks } from "@/components/StreamingLinks";
 import { SubmitButton } from "@/components/SubmitButton";
 import { formatDate, formatYear, average } from "@/lib/format";
-import { shouldSkipImageOptimization } from "@/lib/cover";
+import { AlbumSleeve } from "@/components/AlbumSleeve";
+import { PlayRecordButton } from "@/components/PlayRecordButton";
 import { INTL_TAGS } from "@/i18n/locales";
 import { logListen, deleteListen, toggleWatchlist } from "@/app/albums/[id]/actions";
 
@@ -90,24 +90,27 @@ export default async function AlbumPage(props: PageProps<"/albums/[id]">) {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row gap-6">
-        <div className="w-48 shrink-0 mx-auto sm:mx-0">
-          <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-surface border border-border flex items-center justify-center">
-            {album.cover_url ? (
-              <Image
-                src={album.cover_url}
-                alt={album.title}
-                fill
-                sizes="192px"
-                priority
-                unoptimized={shouldSkipImageOptimization(album.cover_url)}
-                className="object-cover"
-              />
-            ) : (
-              <span className="text-muted text-sm text-center px-3">
-                {album.title}
-              </span>
-            )}
-          </div>
+        <div className="w-52 shrink-0 mx-auto sm:mx-0">
+          <PlayRecordButton
+            album={{
+              id: album.id,
+              title: album.title,
+              artistName: album.artist.name,
+              coverUrl: album.cover_url,
+              releaseDate: album.release_date,
+            }}
+            tracks={tracks ?? []}
+            label={t("playRecordLabel", { title: album.title })}
+            className="block w-full pr-4"
+          >
+            <AlbumSleeve
+              coverUrl={album.cover_url}
+              title={album.title}
+              sizes="208px"
+              priority
+            />
+          </PlayRecordButton>
+          <p className="mt-2 text-center text-xs text-muted">{t("playRecordHint")}</p>
         </div>
 
         <div className="flex-1 min-w-0">

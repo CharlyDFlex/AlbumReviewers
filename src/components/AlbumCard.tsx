@@ -1,7 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { StarDisplay } from "@/components/StarDisplay";
-import { shouldSkipImageOptimization } from "@/lib/cover";
+import { AlbumSleeve } from "@/components/AlbumSleeve";
 import { formatYear } from "@/lib/format";
 import type { Artist, Album } from "@/lib/supabase/types";
 
@@ -15,23 +14,15 @@ export function AlbumCard({
   return (
     <Link
       href={`/albums/${album.id}`}
-      className="group flex shrink-0 flex-col gap-2 w-36 sm:w-40"
+      className="group relative flex shrink-0 flex-col gap-2 w-36 sm:w-40 outline-none hover:z-10 focus-visible:z-10"
     >
-      <div className="relative aspect-square w-full overflow-hidden rounded-md bg-surface border border-border flex items-center justify-center">
-        {album.cover_url ? (
-          <Image
-            src={album.cover_url}
-            alt={album.title}
-            fill
-            sizes="(min-width: 640px) 160px, 144px"
-            unoptimized={shouldSkipImageOptimization(album.cover_url)}
-            className="object-cover transition group-hover:scale-105"
-          />
-        ) : (
-          <span className="text-muted text-xs text-center px-2">
-            {album.title}
-          </span>
-        )}
+      {/* Right padding leaves room for the record to slide out on hover */}
+      <div className="pr-3">
+        <AlbumSleeve
+          coverUrl={album.cover_url}
+          title={album.title}
+          sizes="(min-width: 640px) 160px, 144px"
+        />
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-medium group-hover:text-accent transition">

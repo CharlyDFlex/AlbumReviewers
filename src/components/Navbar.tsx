@@ -26,8 +26,16 @@ export async function Navbar() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link href="/" className="shrink-0 text-lg font-bold tracking-tight">
-          Vinyl<span className="text-accent">box</span>
+        <Link href="/" className="group flex shrink-0 items-center gap-2 text-lg font-bold tracking-tight">
+          <span
+            aria-hidden
+            className="vinyl h-6 w-6 shrink-0 transition-transform duration-700 group-hover:rotate-180"
+          >
+            <span className="vinyl-label bg-accent" />
+          </span>
+          <span>
+            Vinyl<span className="text-accent">box</span>
+          </span>
         </Link>
 
         <nav className="hidden sm:flex items-center gap-4 text-sm text-muted">
@@ -36,6 +44,9 @@ export async function Navbar() {
           </Link>
           {user && (
             <>
+              <Link href="/collection" className="hover:text-foreground transition">
+                {t("collection")}
+              </Link>
               <Link href="/diary" className="hover:text-foreground transition">
                 {t("diary")}
               </Link>
