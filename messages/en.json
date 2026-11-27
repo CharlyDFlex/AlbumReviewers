@@ -16,7 +16,8 @@
     "addAlbum": "Add an album",
     "login": "Log in",
     "signup": "Sign up",
-    "logout": "Log out"
+    "logout": "Log out",
+    "collection": "My collection"
   },
   "SearchBox": {
     "placeholder": "Search for an album or artist..."
@@ -84,7 +85,9 @@
     "noTracksListed": "No tracks listed for this album.",
     "yourReview": "Your review",
     "reviews": "Reviews ({count})",
-    "noReviewsForAlbum": "No reviews yet."
+    "noReviewsForAlbum": "No reviews yet.",
+    "playRecordLabel": "Take the record out of \"{title}\"",
+    "playRecordHint": "Click the sleeve to pull out the record"
   },
   "Artist": {
     "noAlbumsForArtist": "No albums for this artist."
@@ -181,5 +184,34 @@
     "removeTrack": "remove",
     "addTrack": "+ Add a track",
     "submit": "Create album"
+  },
+  "Collection": {
+    "title": "My collection",
+    "subtitle": "{count, plural, =0 {No records on the shelf} one {# record on the shelf} other {# records on the shelf}}",
+    "openDiary": "Open listening diary",
+    "empty": "Your shelf is empty. Mark an album as listened to add it to your collection — <link>browse albums</link>.",
+    "filterPlaceholder": "Search my collection...",
+    "sortBy": "Sort by",
+    "sort": {
+      "recent": "Recently played",
+      "title": "Title",
+      "artist": "Artist",
+      "plays": "Most played"
+    },
+    "noMatch": "No records match your search.",
+    "play": "Play {title} — {artist}",
+    "playShort": "Play"
+  },
+  "Player": {
+    "dialogLabel": "{title} — {artist} on the turntable",
+    "putBack": "Put it back",
+    "nowSpinning": "Now spinning",
+    "linerNotes": "Liner notes",
+    "listenOn": "Listen on",
+    "sideA": "Side A",
+    "sideB": "Side B",
+    "loadingTracks": "Loading tracklist...",
+    "noTracks": "No tracklist for this album.",
+    "viewAlbum": "View album page"
   }
 }
